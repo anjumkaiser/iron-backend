@@ -1,0 +1,6 @@
+[package]
+name = "store-backend"
+version = "0.1.0"
+authors = ["Muhammad Anjum Kaiser <anjumbutt@gmail.com>"]
+
+[dependencies]
