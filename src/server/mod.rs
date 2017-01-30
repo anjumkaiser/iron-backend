@@ -29,6 +29,7 @@ fn configure_router() -> Router {
 	let mut router = Router::new();
 	router.get("/", paths::index_handler, "index");
 	router.get("/2", paths::index_handler2, "index2");
+	router.get("/3/:name", paths::index_handler3, "parametric");
 
 	router
 }
