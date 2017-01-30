@@ -21,43 +21,21 @@ pub fn index_handler2 (_: &mut Request) -> IronResult<Response> {
 
 pub fn index_handler3 (req: &mut Request ) -> IronResult<Response> {
 	
-	let mut resp;
+	let mut resp = Response::with((status::NotFound));
 
 	println!("Request recvd : {:?}", req);
 
 	println!("Url: {:?}", req.url.path());
 	if let Some(params) = req.extensions.get::<Router>() {
-		//if let Some(query) = params["query"] {
-			println!("Params {:?}", params["name"]);
-		//}
+		println!("Params {:?}", params["name"]);
 		
-	}
-	
-
-
-	resp = Response::with((status::Ok, "text data"));
-	resp.headers = Headers::new();
-	resp.headers.set(ContentType(Mime(TopLevel::Text, SubLevel::Plain, vec![])));
-
-
-	//resp.headers.set(ContentType(Mime(TopLevel::Application, SubLevel::OctetStream, vec![])));	// allow download
-
-	/*match map.find(&["query"]) {
-		Some(&Value::String(ref name)) if name == "Anjum" => {
-			let stat = status::Ok;
-			let respdata =  "some data".as_bytes();
-			resp = Response::with((stat, respdata));
+		if let Some(name_param)  = params.find("name") {
+			println!("Found param name : {}", name_param);
+			resp = Response::with((status::Ok, "text data"));
 			resp.headers = Headers::new();
-			resp.headers.set(ContentType(Mime(TopLevel::Application, SubLevel::OctetStream, vec![])));
-
-		},
-		_ => {
-			//stat = status::NotFound;
-			//respdata = "not found".as_bytes();
-			resp = Response::with(status::NotFound)
+			resp.headers.set(ContentType(Mime(TopLevel::Text, SubLevel::Plain, vec![])));
 		}
 	}
-	*/
 
 	Ok(resp)
 }
