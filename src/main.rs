@@ -1,6 +1,8 @@
 extern crate iron;
 extern crate router;
 
+extern crate hyper;
+
 
 mod config;
 mod server;
