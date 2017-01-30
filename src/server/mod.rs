@@ -1,11 +1,10 @@
-use config::*;
-
 use iron::prelude::*;
 use router::*;
+use config;
 
-mod paths;
+mod routes;
 
-pub fn serve(c: Config) {
+pub fn serve(c: config::Config) {
 
 	let router = configure_router();
 	let iron = Iron::new(router);
@@ -15,21 +14,19 @@ pub fn serve(c: Config) {
 	ipaddr += ":";
 	ipaddr += &c.port.to_string();
 
-	//println!("{} : {}", c.ip, c.port);
-
 	println!("{} server started, listening on {}", c.server_string, ipaddr);
 	match iron.http(&*ipaddr) {
 		Ok(listening) => println!("Result: {:?}", listening),
-		Err(x) => println!("Unable to listen, error returned {:?}", x)
+		Err(e) => println!("Unable to listen, error returned {:?}", e)
 	}
 }
 
 
 fn configure_router() -> Router {
 	let mut router = Router::new();
-	router.get("/", paths::index_handler, "index");
-	router.get("/2", paths::index_handler2, "index2");
-	router.get("/3/:name", paths::index_handler3, "parametric");
+	router.get("/", routes::index_handler, "index");
+	router.get("/2", routes::index_handler2, "index2");
+	router.get("/3/:name", routes::index_handler3, "parametric");
 
 	router
 }
