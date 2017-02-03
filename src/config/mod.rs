@@ -1,3 +1,4 @@
+#[derive(Serialize, Deserialize, Debug)]
 pub struct Config {
 	pub server_string: String,
 	pub ip: String,
