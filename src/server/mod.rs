@@ -4,6 +4,8 @@ use config;
 
 mod routes;
 
+
+
 pub fn serve(c: config::Config) {
 
 	let router = configure_router();
@@ -15,10 +17,22 @@ pub fn serve(c: config::Config) {
 	ipaddr += &c.port.to_string();
 
 	println!("{} server started, listening on {}", c.server_string, ipaddr);
-	match iron.http(&*ipaddr) {
-		Ok(listening) => println!("Result: {:?}", listening),
-		Err(e) => println!("Unable to listen, error returned {:?}", e)
+
+	if c.use_https {
+		use hyper_native_tls;
+		if let Ok(ssl) = hyper_native_tls::NativeTlsServer::new(c.certificate_file, &c.certificate_password) {
+			match iron.https(&*ipaddr, ssl) {
+				Ok(listening) => println!("Result: {:?}", listening),
+				Err(e) => println!("Unable to listen, error returned {:?}", e)
+			}			
+		}
+	} else {
+		match iron.http(&*ipaddr) {
+			Ok(listening) => println!("Result: {:?}", listening),
+			Err(e) => println!("Unable to listen, error returned {:?}", e)
+		}
 	}
+
 }
 
 

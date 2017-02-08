@@ -2,12 +2,12 @@ extern crate iron;
 extern crate router;
 
 extern crate hyper;
+extern crate hyper_native_tls;
 extern crate params;
 
 #[macro_use]
 extern crate serde_derive;
 extern crate serde_json;
-
 
 mod config;
 mod server;
@@ -26,4 +26,5 @@ fn main() {
 	}
 
 	server::serve(c);
+
 }

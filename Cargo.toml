@@ -7,6 +7,7 @@ authors = ["Muhammad Anjum Kaiser <anjumbutt@gmail.com>"]
 iron = "*"
 router = "*"
 hyper = "*"
+hyper-native-tls = "*"
 params = "*"
 serde = "*"
 serde_derive = "*"
