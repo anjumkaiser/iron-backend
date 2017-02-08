@@ -16,19 +16,24 @@ pub fn serve(c: config::Config) {
 	ipaddr += ":";
 	ipaddr += &c.port.to_string();
 
+	
 	println!("{} server started, listening on {}", c.server_string, ipaddr);
 
 	if c.use_https {
 		use hyper_native_tls;
 		if let Ok(ssl) = hyper_native_tls::NativeTlsServer::new(c.certificate_file, &c.certificate_password) {
 			match iron.https(&*ipaddr, ssl) {
-				Ok(listening) => println!("Result: {:?}", listening),
+				Ok(listening) => {
+					println!("Secure server listening on: {}", listening.socket)
+				},
 				Err(e) => println!("Unable to listen, error returned {:?}", e)
 			}			
 		}
 	} else {
 		match iron.http(&*ipaddr) {
-			Ok(listening) => println!("Result: {:?}", listening),
+			Ok(listening) => {
+				println!("Secure server listening on: {}", listening.socket)
+			},
 			Err(e) => println!("Unable to listen, error returned {:?}", e)
 		}
 	}
