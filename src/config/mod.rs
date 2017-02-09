@@ -6,6 +6,9 @@ pub struct Config {
     pub use_https: bool,
     pub certificate_file: String,
     pub certificate_password: String,
+    pub database_url: String,
+    pub database_user: String,
+    pub database_password: String,
 }
 
 
@@ -18,6 +21,9 @@ impl Config {
             use_https: true,
             certificate_file: "identity.p12".to_string(),
             certificate_password: "".to_string(),
+            database_url: "localhost".to_string(),
+            database_user: "".to_string(),
+            database_password: "".to_string(),
         };
 
         c.certificate_password = "password".to_string();

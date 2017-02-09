@@ -14,6 +14,7 @@ mod server;
 
 
 fn main() {
+
     let c = config::Config::load();
 
     // SERDE JSON
