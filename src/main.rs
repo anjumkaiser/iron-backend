@@ -9,6 +9,8 @@ extern crate params;
 extern crate serde_derive;
 extern crate serde_json;
 
+extern crate toml;
+
 mod config;
 mod server;
 
