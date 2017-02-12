@@ -31,18 +31,16 @@ impl Config {
             server: Server {
                 ip: "127.0.0.1".to_string(),
                 port: 3000,
-                secure: true,
-                certificate_file: "identity.p12".to_string(),
+                secure: false,
+                certificate_file: "".to_string(),
                 certificate_password: "".to_string(),
             },
             database: Database {
-                url: "localhost".to_string(),
+                url: "".to_string(),
                 user: "".to_string(),
                 password: "".to_string(),
             },
         };
-
-        c.server.certificate_password = "password".to_string();
 
         c
     }
