@@ -47,6 +47,7 @@ impl Config {
 
 
     pub fn load() -> Config {
+        use std;
         use std::io::prelude::*;
         use std::fs::File;
         use toml;
@@ -69,97 +70,19 @@ impl Config {
 
         let mut config_file_buffer = String::new();
         if let Err(e) = config_file_handle.read_to_string(&mut config_file_buffer) {
-            println!("Unable to read config file {}, error {:?}.",
+            println!("Unable to read config file {}, error {}.",
                      config_file_name,
                      e);
             return c;
         }
 
-        let parsed;
-        match toml::Parser::new(&config_file_buffer).parse() {
-            None => {
-                println!("Unable to parse config.");
-                return c;
+        match toml::from_str(&config_file_buffer) {
+            Err(e) => {
+                println!("Unable to parse config. Error returned: {}", e);
+                std::process::exit(1);
             }
-            Some(x) => {
-                parsed = x;
-            }
-        }
-
-        if let Some(x) = parsed.get("server_string") {
-            if let Some(y) = x.as_str() {
-                if !y.is_empty() {
-                    c.server_string = y.to_string();
-                }
-            }
-        }
-
-        if let Some(x) = parsed.get("server") {
-            if let Some(server) = x.as_table() {
-                if let Some(y) = server.get("ip") {
-                    if let Some(z) = y.as_str() {
-                        if !z.is_empty() {
-                            c.server.ip = z.to_string();
-                        }
-                    }
-                }
-
-                if let Some(y) = server.get("port") {
-                    if let Some(z) = y.as_integer() {
-                        let w: u32 = z as u32;
-                        if w > 0 {
-                            c.server.port = w;
-                        }
-                    }
-                }
-
-                if let Some(y) = server.get("secure") {
-                    if let Some(z) = y.as_bool() {
-                        c.server.secure = z;
-                    }
-                }
-
-                if let Some(y) = server.get("certificate_file") {
-                    if let Some(z) = y.as_str() {
-                        if !z.is_empty() {
-                            c.server.certificate_file = z.to_string();
-                        }
-                    }
-                }
-
-                if let Some(y) = server.get("certificate_password") {
-                    if let Some(z) = y.as_str() {
-                        if !z.is_empty() {
-                            c.server.certificate_password = z.to_string();
-                        }
-                    }
-                }
-            }
-        }
-
-        if let Some(x) = parsed.get("database") {
-            if let Some(database) = x.as_table() {
-                if let Some(y) = database.get("url") {
-                    if let Some(z) = y.as_str() {
-                        if !z.is_empty() {
-                            c.database.url = z.to_string();
-                        }
-                    }
-                }
-
-                if let Some(y) = database.get("user") {
-                    if let Some(z) = y.as_str() {
-                        c.database.user = z.to_string();
-                    }
-                }
-
-                if let Some(y) = database.get("password") {
-                    if let Some(z) = y.as_str() {
-                        if !z.is_empty() {
-                            c.database.password = z.to_string();
-                        }
-                    }
-                }
+            Ok(value) => {
+                c = value;
             }
         }
 
