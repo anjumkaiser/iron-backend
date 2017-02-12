@@ -26,7 +26,7 @@ pub struct Config {
 
 impl Config {
     fn new() -> Config {
-        let mut c = Config {
+        let c = Config {
             server_string: "AppName".to_string(),
             server: Server {
                 ip: "127.0.0.1".to_string(),
@@ -105,11 +105,10 @@ impl Config {
                 }
 
                 if let Some(y) = server.get("port") {
-                    if let Some(z) = y.as_str() {
-                        if let Ok(w) = z.parse::<u32>() {
-                            if w > 0 {
-                                c.server.port = w;
-                            }
+                    if let Some(z) = y.as_integer() {
+                        let w: u32 = z as u32;
+                        if w > 0 {
+                            c.server.port = w;
                         }
                     }
                 }
