@@ -22,7 +22,7 @@ mod dal;
 fn main() {
 
     let c = config::Config::load();
-    let dal = dal::DalPool::get(&c);
+    let dal = dal::DalPostgresPool::getPostgresPool(&c);
     let ro_pool = dal.ro_pool;
     let rw_pool = dal.rw_pool;
 
