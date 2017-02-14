@@ -13,13 +13,14 @@ pub struct DalRedisPool {
 
 
 impl DalRedisPool {
-    pub fn getPostgresPool(dbcfg: &config::Config) -> DalRedisPool {
+    pub fn getRedisPool(dbcfg: &config::Config) -> DalRedisPool {
 
         let d;
         let config = r2d2::Config::default();
         let manager;
 
-        match RedisConnectionManager::new("redis://localhost") {
+        let url =dbcfg.redis.url.clone();
+        match RedisConnectionManager::new(url.as_str()) {
             Ok(value) => {
                 manager = value;
             }

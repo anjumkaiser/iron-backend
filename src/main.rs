@@ -24,9 +24,11 @@ mod dal;
 fn main() {
 
     let c = config::Config::load();
-    let dal = dal::DalPostgresPool::getPostgresPool(&c);
-    let ro_pool = dal.ro_pool;
-    let rw_pool = dal.rw_pool;
+    let pg_dal = dal::DalPostgresPool::getPostgresPool(&c);
+    let pg_ro_pool = pg_dal.ro_pool;
+    let pg_rw_pool = pg_dal.rw_pool;
+
+    let redis_dal = dal::DalRedisPool::getRedisPool(&c);
 
     // SERDE JSON
     // {
