@@ -24,12 +24,14 @@ impl DalPostgresPool {
                 manager = value;
             }
             Err(_) => {
+                println!("Unable to create Postgres connection manager.");
                 process::exit(1);
             }
         }
 
         match r2d2::Pool::new(config, manager) {
             Err(_) => {
+                println!("Unable to create Postgres connection pool.");
                 process::exit(1);
             }
             Ok(p) => {
