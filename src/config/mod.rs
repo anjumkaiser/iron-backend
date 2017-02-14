@@ -17,11 +17,20 @@ pub struct Database {
 
 
 #[derive(Deserialize, Debug)]
+pub struct Redis {
+    pub url: String
+}
+
+
+#[derive(Deserialize, Debug)]
 pub struct Config {
     pub server_string: String,
     pub server: Server,
     pub database: Database,
+    pub redis: Redis,
 }
+
+
 
 
 impl Config {
@@ -39,6 +48,9 @@ impl Config {
                 url: "".to_string(),
                 user: "".to_string(),
                 password: "".to_string(),
+            },
+            redis: Redis {
+                url: "".to_string(),
             },
         };
 

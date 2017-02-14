@@ -11,3 +11,7 @@ certificate_password = ""
 url = "localhost"
 user = "user"
 password = "password"
+
+
+[redis]
+url = "redis://localhost"

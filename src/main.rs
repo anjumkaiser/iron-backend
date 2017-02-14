@@ -13,7 +13,9 @@ extern crate toml;
 
 extern crate r2d2;
 extern crate r2d2_postgres;
+extern crate r2d2_redis;
 extern crate postgres;
+extern crate redis;
 
 mod config;
 mod server;
