@@ -11,13 +11,20 @@ extern crate serde_json;
 
 extern crate toml;
 
+extern crate r2d2;
+extern crate r2d2_postgres;
+extern crate postgres;
+
 mod config;
 mod server;
-
+mod dal;
 
 fn main() {
 
     let c = config::Config::load();
+    let dal = dal::DalPool::get(&c);
+    let ro_pool = dal.ro_pool;
+    let rw_pool = dal.rw_pool;
 
     // SERDE JSON
     // {
