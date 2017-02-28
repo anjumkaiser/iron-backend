@@ -14,7 +14,7 @@ serde_derive = "*"
 serde_json = "*"
 toml = "*"
 postgres = "*"
-diesel = "*"
+diesel = { version = "*", features = ["postgres"] }
 diesel_codegen="*"
 dotenv = "*"
 redis = "*"
