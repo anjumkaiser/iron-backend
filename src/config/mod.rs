@@ -18,7 +18,7 @@ pub struct Database {
 
 #[derive(Deserialize, Debug)]
 pub struct Redis {
-    pub url: String
+    pub url: String,
 }
 
 
@@ -49,9 +49,7 @@ impl Config {
                 user: "".to_string(),
                 password: "".to_string(),
             },
-            redis: Redis {
-                url: "".to_string(),
-            },
+            redis: Redis { url: "".to_string() },
         };
 
         c

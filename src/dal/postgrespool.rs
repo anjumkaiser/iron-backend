@@ -13,7 +13,7 @@ pub struct DalPostgresPool {
 
 
 impl DalPostgresPool {
-    pub fn getPostgresPool(dbcfg: &config::Config) -> DalPostgresPool {
+    pub fn get_postgres_pool(dbcfg: &config::Config) -> DalPostgresPool {
 
         let d;
         let config = r2d2::Config::default();
