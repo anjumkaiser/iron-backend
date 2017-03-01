@@ -17,6 +17,11 @@ extern crate r2d2_redis;
 extern crate postgres;
 extern crate redis;
 
+#[macro_use]
+extern crate diesel;
+extern crate r2d2_diesel;
+extern crate dotenv;
+
 mod config;
 mod server;
 mod dal;
@@ -29,6 +34,8 @@ fn main() {
     let pg_rw_pool = pg_dal.rw_pool;
 
     let redis_dal = dal::DalRedisPool::getRedisPool(&c);
+
+    let diesel_pg_dal = dal::DalDieselPool::getDieselPool(&c);
 
     // SERDE JSON
     // {
