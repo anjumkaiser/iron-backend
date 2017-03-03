@@ -3,6 +3,7 @@ use std::process;
 use r2d2;
 use r2d2_postgres::{PostgresConnectionManager, TlsMode};
 use r2d2::Pool;
+use iron::typemap::Key;
 
 use config;
 
@@ -45,4 +46,9 @@ impl DalPostgresPool {
         }
 
     }
+}
+
+
+impl Key for DalPostgresPool {
+    type Value = DalPostgresPool;
 }

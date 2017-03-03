@@ -4,6 +4,7 @@ use diesel::pg::PgConnection;
 use r2d2;
 use r2d2_diesel::ConnectionManager;
 use r2d2::Pool;
+use iron::typemap::Key;
 
 use config;
 
@@ -36,4 +37,9 @@ impl DalDieselPool {
         }
 
     }
+}
+
+
+impl Key for DalDieselPool {
+    type Value = DalDieselPool;
 }

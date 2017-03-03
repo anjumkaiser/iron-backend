@@ -1,15 +1,20 @@
 use iron::prelude::*;
 use router::*;
 use config;
+use dal;
+use persistent::{Read, Write};
 
 mod routes;
 
 
 
-pub fn serve(c: config::Config) {
+pub fn serve(c: config::Config, pg_dal: dal::DalPostgresPool) {
 
     let router = configure_router();
-    let iron = Iron::new(router);
+
+    let mut middleware = Chain::new(router);
+
+    let iron = Iron::new(middleware);
 
     let mut ipaddr: String = "".to_string();
     ipaddr += &c.server.ip;

@@ -3,6 +3,7 @@ use std::process;
 use r2d2;
 use r2d2_redis::RedisConnectionManager;
 use r2d2::Pool;
+use iron::typemap::Key;
 
 use config;
 
@@ -46,4 +47,9 @@ impl DalRedisPool {
         }
 
     }
+}
+
+
+impl Key for DalRedisPool {
+    type Value = DalRedisPool;
 }
