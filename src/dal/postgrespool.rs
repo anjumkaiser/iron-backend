@@ -20,7 +20,18 @@ impl DalPostgresPool {
         let config = r2d2::Config::default();
         let manager;
 
-        match PostgresConnectionManager::new(dbcfg.database.url.clone(), TlsMode::None) {
+        let mut url = "postgres://".to_string();
+        if "" != dbcfg.database.user {
+            url += &dbcfg.database.user;
+            if "" != dbcfg.database.password {
+                url += ":";
+                url += &dbcfg.database.password;
+            }
+            url += "@";
+        }
+        url += &dbcfg.database.url;
+
+        match PostgresConnectionManager::new(url, TlsMode::None) {
             Ok(value) => {
                 manager = value;
             }
