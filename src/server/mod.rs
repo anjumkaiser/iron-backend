@@ -7,6 +7,16 @@ use persistent::{Read, Write};
 mod routes;
 
 
+fn configure_router() -> Router {
+    let mut router = Router::new();
+    router.get("/", routes::index_handler, "index");
+    router.get("/2", routes::index_handler2, "index2");
+    router.get("/3/:name", routes::index_handler3, "parametric");
+
+    router
+}
+
+
 
 pub fn serve(c: config::Config, pg_dal: dal::DalPostgresPool) {
 
@@ -48,14 +58,4 @@ pub fn serve(c: config::Config, pg_dal: dal::DalPostgresPool) {
         }
     }
 
-}
-
-
-fn configure_router() -> Router {
-    let mut router = Router::new();
-    router.get("/", routes::index_handler, "index");
-    router.get("/2", routes::index_handler2, "index2");
-    router.get("/3/:name", routes::index_handler3, "parametric");
-
-    router
 }
