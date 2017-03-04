@@ -1,9 +1,9 @@
 use iron::prelude::*;
 use iron::status;
 use router::*;
-
 use hyper::header::*;
 use hyper::mime::*;
+use dal;
 
 pub fn index_handler(_: &mut Request) -> IronResult<Response> {
     let respdata = "Hello";
@@ -36,6 +36,31 @@ pub fn index_handler3(req: &mut Request) -> IronResult<Response> {
             resp = Response::with((status::Ok, "text data"));
             resp.headers = Headers::new();
             resp.headers.set(ContentType(Mime(TopLevel::Text, SubLevel::Plain, vec![])));
+        }
+    }
+
+    Ok(resp)
+}
+
+pub fn get_db_time(req: &mut Request) -> IronResult<Response> {
+    println!("in get_db_time");
+    let mut resp = Response::with((status::NotFound));
+    match req.extensions.get::<dal::DalPostgresPool>() {
+    //match req.get::<dal::DalPostgresPool>() {
+        Some(arcpool) => {
+            let rwp = arcpool.rw_pool.clone();
+            match rwp.get() {
+                Ok(conn) => {
+                    let qrows = conn.query("SELECT now() as dttm;", &vec![]);
+                    println!("qrows [{:?}]", qrows);
+                },
+                Err(e) => {
+                    println!("Unable to get conn, error {:#?}", e);
+                }
+            }
+        },
+        None => {
+            println!("unable to get arcpool");  
         }
     }
 

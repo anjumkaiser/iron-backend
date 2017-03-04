@@ -1,8 +1,8 @@
 use iron::prelude::*;
 use router::*;
+use persistent::Read;
 use config;
 use dal;
-use persistent::{Read, Write};
 
 mod routes;
 
@@ -12,6 +12,7 @@ fn configure_router() -> Router {
     router.get("/", routes::index_handler, "index");
     router.get("/2", routes::index_handler2, "index2");
     router.get("/3/:name", routes::index_handler3, "parametric");
+    router.get("/getdbtime", routes::get_db_time, "getdbtime");
 
     router
 }
@@ -23,6 +24,7 @@ pub fn serve(c: config::Config, pg_dal: dal::DalPostgresPool) {
     let router = configure_router();
 
     let mut middleware = Chain::new(router);
+    middleware.link_before(Read::<dal::DalPostgresPool>::one(pg_dal));
 
     let iron = Iron::new(middleware);
 
