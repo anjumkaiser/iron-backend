@@ -46,21 +46,21 @@ pub fn get_db_time(req: &mut Request) -> IronResult<Response> {
     println!("in get_db_time");
     let mut resp = Response::with((status::NotFound));
     match req.extensions.get::<dal::DalPostgresPool>() {
-    //match req.get::<dal::DalPostgresPool>() {
+        // match req.get::<dal::DalPostgresPool>() {
         Some(arcpool) => {
             let rwp = arcpool.rw_pool.clone();
             match rwp.get() {
                 Ok(conn) => {
                     let qrows = conn.query("SELECT now() as dttm;", &vec![]);
                     println!("qrows [{:?}]", qrows);
-                },
+                }
                 Err(e) => {
                     println!("Unable to get conn, error {:#?}", e);
                 }
             }
-        },
+        }
         None => {
-            println!("unable to get arcpool");  
+            println!("unable to get arcpool");
         }
     }
 
