@@ -1,6 +1,7 @@
+use std;
 use iron::prelude::*;
 use router::*;
-use persistent::Read;
+use persistent::Write;
 use config;
 use dal;
 
@@ -24,7 +25,7 @@ pub fn serve(c: config::Config, pg_dal: dal::DalPostgresPool) {
     let router = configure_router();
 
     let mut middleware = Chain::new(router);
-    middleware.link_before(Read::<dal::DalPostgresPool>::one(pg_dal));
+    middleware.link_before(Write::<dal::DalPostgresPool>::one(pg_dal));
 
     let iron = Iron::new(middleware);
 

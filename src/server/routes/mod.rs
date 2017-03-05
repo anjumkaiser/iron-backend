@@ -1,9 +1,12 @@
 use iron::prelude::*;
 use iron::status;
 use router::*;
+use persistent::Write;
 use hyper::header::*;
 use hyper::mime::*;
 use dal;
+use std::ops::Deref;
+use r2d2_postgres;
 
 pub fn index_handler(_: &mut Request) -> IronResult<Response> {
     let respdata = "Hello";
@@ -45,22 +48,46 @@ pub fn index_handler3(req: &mut Request) -> IronResult<Response> {
 pub fn get_db_time(req: &mut Request) -> IronResult<Response> {
     println!("in get_db_time");
     let mut resp = Response::with((status::NotFound));
-    match req.extensions.get::<dal::DalPostgresPool>() {
-        // match req.get::<dal::DalPostgresPool>() {
-        Some(arcpool) => {
-            let rwp = arcpool.rw_pool.clone();
-            match rwp.get() {
-                Ok(conn) => {
-                    let qrows = conn.query("SELECT now() as dttm;", &vec![]);
-                    println!("qrows [{:?}]", qrows);
+    // match req.extensions.get::<dal::DalPostgresPool>() {
+    // match req.get::<Write<dal::DalPostgresPool>>() {
+    //
+    // Some(arcpool) => {
+    // let rwp = arcpool.rw_pool.clone();
+    //
+    // match rwp.get() {
+    // Ok(conn) => {
+    // let qrows = conn.query("SELECT now() as dttm;", &vec![]);
+    // println!("qrows [{:?}]", qrows);
+    // }
+    // Err(e) => {
+    // println!("Unable to get conn, error {:#?}", e);
+    // }
+    // }
+    // }
+    // None => {
+    // println!("unable to get arcpool");
+    // }
+    // }
+    //
+
+    match req.get::<Write<dal::DalPostgresPool>>() {
+        Ok(arcpool) => {
+            match arcpool.lock() {
+                Ok(x) => {
+                    let pool = x.deref();
+                    if let Ok(conn) = pool.rw_pool.get() {
+                        if let Ok(qrs) = conn.query("SELECT now() as dttm", &vec![]) {
+                            for x in qrs.iter() {
+                                println!("qrs {:?}", x);
+                            }
+                        }
+                    }
                 }
-                Err(e) => {
-                    println!("Unable to get conn, error {:#?}", e);
-                }
+                Err(e) => {}
             }
         }
-        None => {
-            println!("unable to get arcpool");
+        Err(e) => {
+            println!(" Errorr {:?}", e);
         }
     }
 
