@@ -23,6 +23,7 @@ serde = "0.9.10"
 serde_derive = "0.9.10"
 serde_json = "0.9.8"
 toml = "0.3.1"
+uuid = "0.4.0"
 
 [dependencies.diesel]
 features = ["postgres"]
