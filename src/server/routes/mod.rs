@@ -48,27 +48,6 @@ pub fn index_handler3(req: &mut Request) -> IronResult<Response> {
 pub fn get_db_time(req: &mut Request) -> IronResult<Response> {
     println!("in get_db_time");
     let mut resp = Response::with((status::NotFound));
-    // match req.extensions.get::<dal::DalPostgresPool>() {
-    // match req.get::<Write<dal::DalPostgresPool>>() {
-    //
-    // Some(arcpool) => {
-    // let rwp = arcpool.rw_pool.clone();
-    //
-    // match rwp.get() {
-    // Ok(conn) => {
-    // let qrows = conn.query("SELECT now() as dttm;", &vec![]);
-    // println!("qrows [{:?}]", qrows);
-    // }
-    // Err(e) => {
-    // println!("Unable to get conn, error {:#?}", e);
-    // }
-    // }
-    // }
-    // None => {
-    // println!("unable to get arcpool");
-    // }
-    // }
-    //
 
     match req.get::<Write<dal::DalPostgresPool>>() {
         Ok(arcpool) => {
@@ -76,18 +55,30 @@ pub fn get_db_time(req: &mut Request) -> IronResult<Response> {
                 Ok(x) => {
                     let pool = x.deref();
                     if let Ok(conn) = pool.rw_pool.get() {
-                        if let Ok(qrs) = conn.query("SELECT now() as dttm", &vec![]) {
-                            for x in qrs.iter() {
-                                println!("qrs {:?}", x);
+                        if let Ok(stmt) = conn.prepare("SELECT * FROM test") {
+                            if let Ok(mut rows) = stmt.query(&[]) {
+                                for row in rows.iter() {
+                                    let _id: i32 = row.get("id");
+                                    let _name: String = row.get("name");
+                                    println!("row [{}, {}] ", _id, _name);
+                                }
+                            } else {
+                                println!("unable to execute query");
                             }
+                        } else {
+                            println!("unable to prepare statement");
                         }
+                    } else {
+                        println!("unable to get connection from pool");
                     }
                 }
-                Err(e) => {}
+                Err(e) => {
+                    println!("Error {:?}", e);
+                }
             }
         }
         Err(e) => {
-            println!(" Errorr {:?}", e);
+            println!(" Error {:?}", e);
         }
     }
 
