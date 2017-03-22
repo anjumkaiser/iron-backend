@@ -56,7 +56,7 @@ pub fn get_db_time(req: &mut Request) -> IronResult<Response> {
                     let pool = x.deref();
                     if let Ok(conn) = pool.rw_pool.get() {
                         if let Ok(stmt) = conn.prepare("SELECT * FROM test") {
-                            if let Ok(mut rows) = stmt.query(&[]) {
+                            if let Ok(rows) = stmt.query(&[]) {
                                 for row in rows.iter() {
                                     let _id: i32 = row.get("id");
                                     let _name: String = row.get("name");
