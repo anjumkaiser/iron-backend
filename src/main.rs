@@ -26,7 +26,6 @@ extern crate dotenv;
 
 extern crate time;
 
-
 mod config;
 mod server;
 mod dal;

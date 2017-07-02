@@ -8,6 +8,8 @@ use dal;
 use std::ops::Deref;
 use r2d2_postgres;
 use time::{Timespec, Tm, at_utc};
+use serde_json;
+
 
 pub fn index_handler(_: &mut Request) -> IronResult<Response> {
     let respdata = "Hello";
@@ -71,13 +73,31 @@ pub fn get_db_time(req: &mut Request) -> IronResult<Response> {
                                     let _timestamp: Timespec = row.get("timestamp");
                                     let utc_tm: Tm = at_utc(_timestamp);
                                     let local_tm: Tm = utc_tm.to_local();
-                                    println!("row [{}, {}, utc {}, local {}] ", _id, _name, utc_tm.asctime(), local_tm.asctime());
+                                    println!(
+                                        "row [{}, {}, utc {}, local {}] ",
+                                        _id,
+                                        _name,
+                                        utc_tm.asctime(),
+                                        local_tm.asctime()
+                                    );
 
-                                    resp = Response::with(status::Ok);
-                                    resp.headers = Headers::new();
-                                    resp.headers.set(ContentType(
-                                        Mime(TopLevel::Application, SubLevel::Json, vec![]),
-                                    ));
+                                    let data: DbData = DbData {
+                                        Id: _id,
+                                        Name: _name,
+                                        Timestamp: _timestamp.sec,
+                                    };
+
+                                    match serde_json::to_string(&data) {
+                                        Ok(json_resp) => {
+                                            resp = Response::with((status::Ok, json_resp));
+                                            resp.headers.set(ContentType(Mime(
+                                                TopLevel::Application,
+                                                SubLevel::Json,
+                                                vec![],
+                                            )));
+                                        }
+                                        _ => {}
+                                    }
                                 }
                             } else {
                                 println!("unable to execute query");
@@ -100,4 +120,12 @@ pub fn get_db_time(req: &mut Request) -> IronResult<Response> {
     }
 
     Ok(resp)
+}
+
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct DbData {
+    pub Id: i32,
+    pub Name: String,
+    pub Timestamp: i64,
 }
