@@ -68,9 +68,11 @@ impl Config {
         let mut config_file_handle;
         match File::open(config_file_name) {
             Err(e) => {
-                println!("Unable to open config file {}, error {:?}.",
-                         config_file_name,
-                         e);
+                println!(
+                    "Unable to open config file {}, error {:?}.",
+                    config_file_name,
+                    e
+                );
                 return c;
             }
             Ok(value) => {
@@ -80,9 +82,11 @@ impl Config {
 
         let mut config_file_buffer = String::new();
         if let Err(e) = config_file_handle.read_to_string(&mut config_file_buffer) {
-            println!("Unable to read config file {}, error {}.",
-                     config_file_name,
-                     e);
+            println!(
+                "Unable to read config file {}, error {}.",
+                config_file_name,
+                e
+            );
             return c;
         }
 

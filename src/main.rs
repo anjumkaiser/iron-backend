@@ -24,6 +24,9 @@ extern crate diesel;
 extern crate r2d2_diesel;
 extern crate dotenv;
 
+extern crate time;
+
+
 mod config;
 mod server;
 mod dal;

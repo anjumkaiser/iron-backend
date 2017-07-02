@@ -7,6 +7,7 @@ use hyper::mime::*;
 use dal;
 use std::ops::Deref;
 use r2d2_postgres;
+use time::{Timespec, Tm, at_utc};
 
 pub fn index_handler(_: &mut Request) -> IronResult<Response> {
     let respdata = "Hello";
@@ -18,9 +19,11 @@ pub fn index_handler2(_: &mut Request) -> IronResult<Response> {
     let respdata = r#"{"key","value"}"#.as_bytes();
     let mut resp = Response::with((status::Ok, respdata));
     resp.headers = Headers::new();
-    resp.headers.set(ContentType(Mime(TopLevel::Application,
-                                      SubLevel::Json,
-                                      vec![(Attr::Charset, Value::Utf8)])));
+    resp.headers.set(ContentType(Mime(
+        TopLevel::Application,
+        SubLevel::Json,
+        vec![(Attr::Charset, Value::Utf8)],
+    )));
     Ok(resp)
 }
 
@@ -38,7 +41,9 @@ pub fn index_handler3(req: &mut Request) -> IronResult<Response> {
             println!("Found param name : {}", name_param);
             resp = Response::with((status::Ok, "text data"));
             resp.headers = Headers::new();
-            resp.headers.set(ContentType(Mime(TopLevel::Text, SubLevel::Plain, vec![])));
+            resp.headers.set(ContentType(
+                Mime(TopLevel::Text, SubLevel::Plain, vec![]),
+            ));
         }
     }
 
@@ -55,12 +60,24 @@ pub fn get_db_time(req: &mut Request) -> IronResult<Response> {
                 Ok(x) => {
                     let pool = x.deref();
                     if let Ok(conn) = pool.rw_pool.get() {
-                        if let Ok(stmt) = conn.prepare("SELECT * FROM test") {
+                        if let Ok(stmt) = conn.prepare(
+                            "SELECT 1 as id, 'someone' as name, now() as timestamp",
+                        )
+                        {
                             if let Ok(rows) = stmt.query(&[]) {
                                 for row in rows.iter() {
                                     let _id: i32 = row.get("id");
                                     let _name: String = row.get("name");
-                                    println!("row [{}, {}] ", _id, _name);
+                                    let _timestamp: Timespec = row.get("timestamp");
+                                    let utc_tm: Tm = at_utc(_timestamp);
+                                    let local_tm: Tm = utc_tm.to_local();
+                                    println!("row [{}, {}, utc {}, local {}] ", _id, _name, utc_tm.asctime(), local_tm.asctime());
+
+                                    resp = Response::with(status::Ok);
+                                    resp.headers = Headers::new();
+                                    resp.headers.set(ContentType(
+                                        Mime(TopLevel::Application, SubLevel::Json, vec![]),
+                                    ));
                                 }
                             } else {
                                 println!("unable to execute query");
