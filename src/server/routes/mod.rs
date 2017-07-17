@@ -53,6 +53,15 @@ pub fn index_handler3(req: &mut Request) -> IronResult<Response> {
 }
 
 pub fn get_db_time(req: &mut Request) -> IronResult<Response> {
+
+    #[derive(Serialize, Deserialize, Debug)]
+    pub struct DbData {
+        pub Id: i32,
+        pub Name: String,
+        pub Timestamp: i64,
+    }
+
+
     println!("in get_db_time");
     let mut resp = Response::with((status::NotFound));
 
@@ -123,9 +132,24 @@ pub fn get_db_time(req: &mut Request) -> IronResult<Response> {
 }
 
 
-#[derive(Serialize, Deserialize, Debug)]
-pub struct DbData {
-    pub Id: i32,
-    pub Name: String,
-    pub Timestamp: i64,
+pub fn authenticate (req: &mut Request) -> IronResult<Response> {
+    println!("in authenticate");
+    let mut resp = Response::with((status::NotFound));
+
+    let ref rhead = req.headers;
+    println!("rhead {}", rhead);
+    /*
+    match rhead.get("Content-Type") {
+        Some(ctype) => {
+            println!("rhead ContentType {}", ctype );
+        },
+        _ => {
+        }
+    }
+    */
+
+    let ref rbody = req.body;
+    //println!("line #{}", rbody);
+
+    Ok(resp)
 }

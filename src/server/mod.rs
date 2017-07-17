@@ -14,6 +14,7 @@ fn configure_router() -> Router {
     router.get("/2", routes::index_handler2, "index2");
     router.get("/3/:name", routes::index_handler3, "parametric");
     router.get("/getdbtime", routes::get_db_time, "getdbtime");
+    router.post("/authenticate", routes::authenticate, "authenticate");
 
     router
 }
