@@ -134,11 +134,11 @@ pub fn get_db_time(req: &mut Request) -> IronResult<Response> {
 }
 
 
-pub fn authenticate (req: &mut Request) -> IronResult<Response> {
+pub fn authenticate(req: &mut Request) -> IronResult<Response> {
 
 
     println!("in authenticate");
-    
+
 
     let mut resp = Response::with((status::NotFound));
 
@@ -152,13 +152,26 @@ pub fn authenticate (req: &mut Request) -> IronResult<Response> {
             if let Ok(strx) = str::from_utf8(&ctype[0]) {
                 println!("content type received is {}", strx);
                 if strx == "application/json" {
-                    resp_content_type = ContentType(Mime(TopLevel::Application, SubLevel::Json, vec![]));
+                    resp_content_type =
+                        ContentType(Mime(TopLevel::Application, SubLevel::Json, vec![]));
                 } else if strx == "application/cbor" {
-                    resp_content_type = ContentType(Mime(TopLevel::Application, SubLevel::Ext("cbor".to_string()), vec![]));
+                    resp_content_type = ContentType(Mime(
+                        TopLevel::Application,
+                        SubLevel::Ext("cbor".to_string()),
+                        vec![],
+                    ));
                 } else if strx == "application/msgpack" {
-                    resp_content_type = ContentType(Mime(TopLevel::Application, SubLevel::Ext("msgpack".to_string()), vec![]));
+                    resp_content_type = ContentType(Mime(
+                        TopLevel::Application,
+                        SubLevel::Ext("msgpack".to_string()),
+                        vec![],
+                    ));
                 } else if strx == "applcaiton/protobuf" {
-                    resp_content_type = ContentType(Mime(TopLevel::Application, SubLevel::Ext("protobuf".to_string()), vec![]));
+                    resp_content_type = ContentType(Mime(
+                        TopLevel::Application,
+                        SubLevel::Ext("protobuf".to_string()),
+                        vec![],
+                    ));
                 } else {
                     // json
                 }
@@ -167,7 +180,7 @@ pub fn authenticate (req: &mut Request) -> IronResult<Response> {
             resp_content_type = ContentType(Mime(TopLevel::Application, SubLevel::Json, vec![]));
 
         }
-    } 
+    }
 
     //let ref rbody = req.body;
     //println!("line #{}", rbody);
