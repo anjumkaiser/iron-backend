@@ -9,6 +9,8 @@ use std::ops::Deref;
 use r2d2_postgres;
 use time::{Timespec, Tm, at_utc};
 use serde_json;
+use std;
+use std::str;
 
 
 pub fn index_handler(_: &mut Request) -> IronResult<Response> {
@@ -133,23 +135,44 @@ pub fn get_db_time(req: &mut Request) -> IronResult<Response> {
 
 
 pub fn authenticate (req: &mut Request) -> IronResult<Response> {
+
+
     println!("in authenticate");
+    
+
     let mut resp = Response::with((status::NotFound));
 
     let ref rhead = req.headers;
     println!("rhead {}", rhead);
-    /*
-    match rhead.get("Content-Type") {
-        Some(ctype) => {
-            println!("rhead ContentType {}", ctype );
-        },
-        _ => {
-        }
-    }
-    */
 
-    let ref rbody = req.body;
+    let mut resp_content_type = ContentType(Mime(TopLevel::Application, SubLevel::Json, vec![]));
+
+    if rhead.has::<ContentType>() {
+        if let Some(ctype) = rhead.get_raw("content-type") {
+            if let Ok(strx) = str::from_utf8(&ctype[0]) {
+                println!("content type received is {}", strx);
+                if strx == "application/json" {
+                    resp_content_type = ContentType(Mime(TopLevel::Application, SubLevel::Json, vec![]));
+                } else if strx == "application/cbor" {
+                    resp_content_type = ContentType(Mime(TopLevel::Application, SubLevel::Ext("cbor".to_string()), vec![]));
+                } else if strx == "application/msgpack" {
+                    resp_content_type = ContentType(Mime(TopLevel::Application, SubLevel::Ext("msgpack".to_string()), vec![]));
+                } else if strx == "applcaiton/protobuf" {
+                    resp_content_type = ContentType(Mime(TopLevel::Application, SubLevel::Ext("protobuf".to_string()), vec![]));
+                } else {
+                    // json
+                }
+            }
+        } else {
+            resp_content_type = ContentType(Mime(TopLevel::Application, SubLevel::Json, vec![]));
+
+        }
+    } 
+
+    //let ref rbody = req.body;
     //println!("line #{}", rbody);
+
+    resp.headers.set(resp_content_type);
 
     Ok(resp)
 }
