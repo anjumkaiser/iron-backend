@@ -1,6 +1,7 @@
 extern crate iron;
 extern crate router;
 extern crate persistent;
+extern crate bodyparser;
 
 extern crate hyper;
 extern crate hyper_native_tls;
@@ -12,6 +13,8 @@ extern crate serde_json;
 extern crate serde;
 
 extern crate toml;
+
+extern crate bcrypt;
 
 extern crate r2d2;
 extern crate r2d2_postgres;

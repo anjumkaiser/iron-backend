@@ -1,6 +1,8 @@
 use iron::prelude::*;
 use iron::status;
 use router::*;
+use bodyparser;
+
 use persistent::Write;
 use hyper::header::*;
 use hyper::mime::*;
@@ -11,6 +13,8 @@ use time::{Timespec, Tm, at_utc};
 use serde_json;
 use std;
 use std::str;
+
+use bcrypt;
 
 
 pub fn index_handler(_: &mut Request) -> IronResult<Response> {
@@ -109,6 +113,8 @@ pub fn get_db_time(req: &mut Request) -> IronResult<Response> {
                                         }
                                         _ => {}
                                     }
+
+                                    break; // we only need first element
                                 }
                             } else {
                                 println!("unable to execute query");
@@ -134,6 +140,7 @@ pub fn get_db_time(req: &mut Request) -> IronResult<Response> {
 }
 
 
+
 pub fn authenticate(req: &mut Request) -> IronResult<Response> {
 
 
@@ -142,13 +149,15 @@ pub fn authenticate(req: &mut Request) -> IronResult<Response> {
 
     let mut resp = Response::with((status::NotFound));
 
-    let ref rhead = req.headers;
-    println!("rhead {}", rhead);
+    //let ref rhead = req.headers;
+    //println!("rhead {}", rhead);
+    //let ref rbody = req.body;
+    //println!("rbody {}", rbody);
 
     let mut resp_content_type = ContentType(Mime(TopLevel::Application, SubLevel::Json, vec![]));
 
-    if rhead.has::<ContentType>() {
-        if let Some(ctype) = rhead.get_raw("content-type") {
+    if req.headers.has::<ContentType>() {
+        if let Some(ctype) = req.headers.get_raw("content-type") {
             if let Ok(strx) = str::from_utf8(&ctype[0]) {
                 println!("content type received is {}", strx);
                 if strx == "application/json" {
@@ -178,9 +187,97 @@ pub fn authenticate(req: &mut Request) -> IronResult<Response> {
             }
         } else {
             resp_content_type = ContentType(Mime(TopLevel::Application, SubLevel::Json, vec![]));
-
         }
     }
+
+    let rbody = req.get::<bodyparser::Json>();
+    println!("rbody {:?}", rbody);
+
+    #[derive(Serialize, Deserialize, Clone, Debug)]
+    struct AuthUser {
+        pub username: String,
+        pub password: String,
+    };
+
+    if let Ok(Some(authuser)) = req.get::<bodyparser::Struct<AuthUser>>() {
+
+        println!("authuser = {:?}", authuser);
+        //let query = format!("select * from user where userid={}", authuser.username);
+        let query = "select * from customer_local_auth where local_id=$1";
+        println!("query [{}]", query);
+
+        match req.get::<Write<dal::DalPostgresPool>>() {
+            Ok(arcpool) => {
+                match arcpool.lock() {
+                    Ok(x) => {
+                        let pool = x.deref();
+                        if let Ok(conn) = pool.rw_pool.get() {
+                            match conn.prepare(&query) {
+                                Ok(stmt) => {
+                                    if let Ok(rows) = stmt.query(&[&"admin".to_string()]) {
+                                        for row in rows.iter() {
+                                            /*
+                                    let _id: i32 = row.get("id");
+                                    let _name: String = row.get("name");
+                                    let _password: String = row.get("password");
+                                    let utc_tm: Tm = at_utc(_timestamp);
+                                    let local_tm: Tm = utc_tm.to_local();
+                                    println!(
+                                        "row [{}, {}, utc {}, local {}] ",
+                                        _id,
+                                        _name,
+                                        utc_tm.asctime(),
+                                        local_tm.asctime()
+                                    );
+
+                                    let data: DbData = DbData {
+                                        Id: _id,
+                                        Name: _name,
+                                        Timestamp: _timestamp.sec,
+                                    };
+
+                                    match serde_json::to_string(&data) {
+                                        Ok(json_resp) => {
+                                            resp = Response::with((status::Ok, json_resp));
+                                            resp.headers.set(ContentType(Mime(
+                                                TopLevel::Application,
+                                                SubLevel::Json,
+                                                vec![],
+                                            )));
+                                        }
+                                        _ => {}
+                                    }
+                                    */
+
+                                            //let res = bcrypt::verify(password, hash);
+                                            break; // we only need first element
+                                        }
+                                    } else {
+                                        println!("unable to execute query");
+                                    }
+                                }
+                                Err(e) => {
+                                    println!("unable to prepare statement e {:?}", e);
+                                }
+                            }
+                        } else {
+                            println!("unable to get connection from pool");
+                        }
+                    }
+                    Err(e) => {
+                        println!("Error {:?}", e);
+                    }
+                }
+            }
+            Err(e) => {
+                println!(" Error {:?}", e);
+            }
+        }
+    }
+
+
+    //use bcrypt;
+    //println!("bcrypt password [{}}", bcrypt(authuser.password));
 
     //let ref rbody = req.body;
     //println!("line #{}", rbody);
