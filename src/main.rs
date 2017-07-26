@@ -13,7 +13,7 @@ extern crate serde_json;
 extern crate serde;
 
 extern crate toml;
-
+extern crate uuid;
 extern crate bcrypt;
 
 extern crate r2d2;

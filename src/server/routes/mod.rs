@@ -14,6 +14,7 @@ use serde_json;
 use std;
 use std::str;
 
+use uuid;
 use bcrypt;
 
 
@@ -215,42 +216,36 @@ pub fn authenticate(req: &mut Request) -> IronResult<Response> {
                             match conn.prepare(&query) {
                                 Ok(stmt) => {
                                     if let Ok(rows) = stmt.query(&[&"admin".to_string()]) {
-                                        for row in rows.iter() {
-                                            /*
-                                    let _id: i32 = row.get("id");
-                                    let _name: String = row.get("name");
-                                    let _password: String = row.get("password");
-                                    let utc_tm: Tm = at_utc(_timestamp);
-                                    let local_tm: Tm = utc_tm.to_local();
-                                    println!(
-                                        "row [{}, {}, utc {}, local {}] ",
-                                        _id,
-                                        _name,
-                                        utc_tm.asctime(),
-                                        local_tm.asctime()
-                                    );
+                                        if rows.is_empty() {
+                                            println!("empty rows");
+                                        } else {
 
-                                    let data: DbData = DbData {
-                                        Id: _id,
-                                        Name: _name,
-                                        Timestamp: _timestamp.sec,
-                                    };
+                                            for row in rows.iter() {
 
-                                    match serde_json::to_string(&data) {
-                                        Ok(json_resp) => {
-                                            resp = Response::with((status::Ok, json_resp));
-                                            resp.headers.set(ContentType(Mime(
-                                                TopLevel::Application,
-                                                SubLevel::Json,
-                                                vec![],
-                                            )));
-                                        }
-                                        _ => {}
-                                    }
-                                    */
+                                                #[derive(Debug, Serialize, Deserialize)]
+                                                struct CustomerLocalAuth {
+                                                    pub customer_id_uuid: uuid::Uuid,
+                                                    pub password_hash: String,
+                                                }
 
-                                            //let res = bcrypt::verify(password, hash);
-                                            break; // we only need first element
+                                                let c: CustomerLocalAuth = CustomerLocalAuth {
+                                                    customer_id_uuid : row.get("customer_id_uuid"),
+                                                    password_hash : row.get("password_hash")
+                                                };
+                                                println!("c [{:?}]", c);
+                                                if let Ok(res) = bcrypt::verify(
+                                                    &authuser.password,
+                                                    &c.password_hash,
+                                                )
+                                                {
+                                                    println!("res [{:?}]", res);
+                                                    if res == true {
+                                                        resp = Response::with((status::Ok));
+                                                    }
+                                                }
+
+                                                break; // we only need first element
+                                            }
                                         }
                                     } else {
                                         println!("unable to execute query");
@@ -274,11 +269,7 @@ pub fn authenticate(req: &mut Request) -> IronResult<Response> {
             }
         }
     }
-
-
-    //use bcrypt;
-    //println!("bcrypt password [{}}", bcrypt(authuser.password));
-
+    
     //let ref rbody = req.body;
     //println!("line #{}", rbody);
 

@@ -36,7 +36,11 @@ serde_xml = "0.9.1"
 serde_yaml = "0.7.1"
 time = "0.1.38"
 toml = "0.4.2"
-uuid = "0.5.1"
+
+
+[dependencies.uuid]
+features = ["serde"]
+version = "0.5.1"
 
 [dependencies.diesel]
 features = ["postgres", "uuid", "serde_json"]
