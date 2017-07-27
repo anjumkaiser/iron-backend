@@ -4,6 +4,10 @@ name = "store-backend"
 version = "0.1.0"
 
 [[bin]]
+name = "store-backend"
+path = "src/bin/store-backend/main.rs"
+
+[[bin]]
 name = "store-backend-setup"
 path = "src/bin/store-backend-setup/main.rs"
 
