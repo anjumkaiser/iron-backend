@@ -29,7 +29,11 @@ extern crate dotenv;
 
 extern crate time;
 
-mod config;
+extern crate common;
+
+use common::config;
+
+
 mod server;
 mod dal;
 
