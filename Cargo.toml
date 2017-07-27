@@ -3,6 +3,10 @@ authors = ["Muhammad Anjum Kaiser <anjumbutt@gmail.com>"]
 name = "store-backend"
 version = "0.1.0"
 
+[lib]
+name = "common"
+path = "src/lib/common/lib.rs"
+
 [[bin]]
 name = "store-backend"
 path = "src/bin/store-backend/main.rs"
