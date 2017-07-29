@@ -2,15 +2,9 @@
 authors = ["Muhammad Anjum Kaiser <anjumbutt@gmail.com>"]
 name = "store-backend"
 version = "0.1.0"
-
-[lib]
-name = "common"
-path = "src/lib/common/lib.rs"
-
 [[bin]]
 name = "store-backend"
 path = "src/bin/store-backend/main.rs"
-
 [[bin]]
 name = "store-backend-setup"
 path = "src/bin/store-backend-setup/main.rs"
@@ -26,6 +20,7 @@ hyper-native-tls = "0.2.4"
 iron = "0.5.1"
 iron-csrf = "0.2.2"
 iron-sessionstorage = "0.6.6"
+jsonwebtoken = "2.0.3"
 mongodb = "0.3.1"
 mqtt = "0.1.3"
 params = "0.6.0"
@@ -49,11 +44,6 @@ serde_yaml = "0.7.1"
 time = "0.1.38"
 toml = "0.4.2"
 
-
-[dependencies.uuid]
-features = ["serde"]
-version = "0.5.1"
-
 [dependencies.diesel]
 features = ["postgres", "uuid", "serde_json"]
 version = "0.14.1"
@@ -65,3 +55,11 @@ version = "0.14.0"
 [dependencies.postgres]
 features = ["with-uuid", "with-time"]
 version = "0.14.0"
+
+[dependencies.uuid]
+features = ["serde"]
+version = "0.5.1"
+
+[lib]
+name = "common"
+path = "src/lib/common/lib.rs"
