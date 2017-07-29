@@ -1,4 +1,5 @@
 server_string = "AppName"
+password_hash_cost = 10
 
 [server]
 ip = "127.0.0.1"

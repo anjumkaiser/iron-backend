@@ -25,6 +25,7 @@ pub struct Redis {
 #[derive(Deserialize, Debug)]
 pub struct Config {
     pub server_string: String,
+    pub password_hash_cost: u32,
     pub server: Server,
     pub database: Database,
     pub redis: Redis,
@@ -37,6 +38,7 @@ impl Config {
     fn new() -> Config {
         let c = Config {
             server_string: "AppName".to_string(),
+            password_hash_cost: 10,
             server: Server {
                 ip: "127.0.0.1".to_string(),
                 port: 3000,
