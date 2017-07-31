@@ -33,6 +33,7 @@ r2d2_redis = "0.6.0"
 redis = "0.8.0"
 rmp-serde = "0.13.4"
 router = "0.5.1"
+rpassword = "0.4.2"
 serde = "1.0.10"
 serde-protobuf = "0.5.0"
 serde_cbor = "0.6.0"
@@ -57,7 +58,7 @@ features = ["with-uuid", "with-time"]
 version = "0.14.0"
 
 [dependencies.uuid]
-features = ["serde"]
+features = ["serde", "v4", "v5"]
 version = "0.5.1"
 
 [lib]
