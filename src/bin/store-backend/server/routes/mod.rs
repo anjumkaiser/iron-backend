@@ -78,10 +78,7 @@ pub fn get_db_time(req: &mut Request) -> IronResult<Response> {
                 Ok(x) => {
                     let pool = x.deref();
                     if let Ok(conn) = pool.rw_pool.get() {
-                        if let Ok(stmt) = conn.prepare(
-                            "SELECT 1 as id, 'someone' as name, now() as timestamp",
-                        )
-                        {
+                        if let Ok(stmt) = conn.prepare("SELECT 1 as id, 'someone' as name, now() as timestamp") {
                             if let Ok(rows) = stmt.query(&[]) {
                                 for row in rows.iter() {
                                     let _id: i32 = row.get("id");
@@ -106,11 +103,9 @@ pub fn get_db_time(req: &mut Request) -> IronResult<Response> {
                                     match serde_json::to_string(&data) {
                                         Ok(json_resp) => {
                                             resp = Response::with((status::Ok, json_resp));
-                                            resp.headers.set(ContentType(Mime(
-                                                TopLevel::Application,
-                                                SubLevel::Json,
-                                                vec![],
-                                            )));
+                                            resp.headers.set(ContentType(
+                                                Mime(TopLevel::Application, SubLevel::Json, vec![]),
+                                            ));
                                         }
                                         _ => {}
                                     }
@@ -162,8 +157,7 @@ pub fn authenticate(req: &mut Request) -> IronResult<Response> {
             if let Ok(strx) = str::from_utf8(&ctype[0]) {
                 println!("content type received is {}", strx);
                 if strx == "application/json" {
-                    resp_content_type =
-                        ContentType(Mime(TopLevel::Application, SubLevel::Json, vec![]));
+                    resp_content_type = ContentType(Mime(TopLevel::Application, SubLevel::Json, vec![]));
                 } else if strx == "application/cbor" {
                     resp_content_type = ContentType(Mime(
                         TopLevel::Application,
@@ -229,15 +223,11 @@ pub fn authenticate(req: &mut Request) -> IronResult<Response> {
                                                 }
 
                                                 let c: CustomerLocalAuth = CustomerLocalAuth {
-                                                    customer_id_uuid : row.get("customer_id_uuid"),
-                                                    password_hash : row.get("password_hash")
+                                                    customer_id_uuid: row.get("customer_id_uuid"),
+                                                    password_hash: row.get("password_hash"),
                                                 };
                                                 println!("c [{:?}]", c);
-                                                if let Ok(res) = bcrypt::verify(
-                                                    &authuser.password,
-                                                    &c.password_hash,
-                                                )
-                                                {
+                                                if let Ok(res) = bcrypt::verify(&authuser.password, &c.password_hash) {
                                                     println!("res [{:?}]", res);
                                                     if res == true {
                                                         resp = Response::with((status::Ok));
@@ -269,7 +259,7 @@ pub fn authenticate(req: &mut Request) -> IronResult<Response> {
             }
         }
     }
-    
+
     //let ref rbody = req.body;
     //println!("line #{}", rbody);
 
