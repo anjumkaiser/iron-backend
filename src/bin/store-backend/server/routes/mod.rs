@@ -267,3 +267,142 @@ pub fn authenticate(req: &mut Request) -> IronResult<Response> {
 
     Ok(resp)
 }
+
+
+
+pub fn backoffice_authenticate(req: &mut Request) -> IronResult<Response> {
+
+
+    println!("in authenticate");
+
+
+    let mut resp = Response::with((status::NotFound));
+
+    //let ref rhead = req.headers;
+    //println!("rhead {}", rhead);
+    //let ref rbody = req.body;
+    //println!("rbody {}", rbody);
+
+    let mut resp_content_type = ContentType(Mime(TopLevel::Application, SubLevel::Json, vec![]));
+
+    if req.headers.has::<ContentType>() {
+        if let Some(ctype) = req.headers.get_raw("content-type") {
+            if let Ok(strx) = str::from_utf8(&ctype[0]) {
+                println!("content type received is {}", strx);
+                if strx == "application/json" {
+                    resp_content_type = ContentType(Mime(TopLevel::Application, SubLevel::Json, vec![]));
+                } else if strx == "application/cbor" {
+                    resp_content_type = ContentType(Mime(
+                        TopLevel::Application,
+                        SubLevel::Ext("cbor".to_string()),
+                        vec![],
+                    ));
+                } else if strx == "application/msgpack" {
+                    resp_content_type = ContentType(Mime(
+                        TopLevel::Application,
+                        SubLevel::Ext("msgpack".to_string()),
+                        vec![],
+                    ));
+                } else if strx == "applcaiton/protobuf" {
+                    resp_content_type = ContentType(Mime(
+                        TopLevel::Application,
+                        SubLevel::Ext("protobuf".to_string()),
+                        vec![],
+                    ));
+                } else {
+                    // json
+                }
+            }
+        } else {
+            resp_content_type = ContentType(Mime(TopLevel::Application, SubLevel::Json, vec![]));
+        }
+    }
+
+    let rbody = req.get::<bodyparser::Json>();
+    println!("rbody {:?}", rbody);
+
+    #[derive(Serialize, Deserialize, Clone, Debug)]
+    struct AuthUser {
+        pub username: String,
+        pub password: String,
+    };
+
+    if let Ok(Some(authuser)) = req.get::<bodyparser::Struct<AuthUser>>() {
+
+        println!("authuser = {:?}", authuser);
+        //let query = format!("select * from user where userid={}", authuser.username);
+        let mut query : String = "SELECT ".to_string();
+        query += "a.id as user_id, a.name as user_name, b.password as user_password";
+        query += " FROM backoffice_user a, backoffice_user_password b";
+        query += " WHERE b.user_id = a.id";
+        query += " AND a.name=$1";
+        //query += " group by b.date";
+        query += " order by b.date";
+        println!("query [{}]", query);
+
+        match req.get::<Write<dal::DalPostgresPool>>() {
+            Ok(arcpool) => {
+                match arcpool.lock() {
+                    Ok(x) => {
+                        let pool = x.deref();
+                        if let Ok(conn) = pool.rw_pool.get() {
+                            match conn.prepare(&query) {
+                                Ok(stmt) => {
+                                    if let Ok(rows) = stmt.query(&[&authuser.username]) {
+                                        if rows.is_empty() {
+                                            println!("empty rows");
+                                        } else {
+
+                                            for row in rows.iter() {
+
+                                                #[derive(Debug, Serialize, Deserialize)]
+                                                struct BackOfficeUserAuth {
+                                                    pub customer_id_uuid: uuid::Uuid,
+                                                    pub password_hash: String,
+                                                }
+
+                                                let c: BackOfficeUserAuth = BackOfficeUserAuth {
+                                                    customer_id_uuid: row.get("user_id"),
+                                                    password_hash: row.get("user_password"),
+                                                };
+                                                println!("c [{:?}]", c);
+                                                if let Ok(res) = bcrypt::verify(&authuser.password, &c.password_hash) {
+                                                    println!("res [{:?}]", res);
+                                                    if res == true {
+                                                        resp = Response::with((status::Ok));
+                                                    }
+                                                }
+
+                                                break; // we only need first element
+                                            }
+                                        }
+                                    } else {
+                                        println!("unable to execute query");
+                                    }
+                                }
+                                Err(e) => {
+                                    println!("unable to prepare statement e {:?}", e);
+                                }
+                            }
+                        } else {
+                            println!("unable to get connection from pool");
+                        }
+                    }
+                    Err(e) => {
+                        println!("Error {:?}", e);
+                    }
+                }
+            }
+            Err(e) => {
+                println!(" Error {:?}", e);
+            }
+        }
+    }
+
+    //let ref rbody = req.body;
+    //println!("line #{}", rbody);
+
+    resp.headers.set(resp_content_type);
+
+    Ok(resp)
+}

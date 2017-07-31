@@ -15,6 +15,7 @@ fn configure_router() -> Router {
     router.get("/3/:name", routes::index_handler3, "parametric");
     router.get("/getdbtime", routes::get_db_time, "getdbtime");
     router.post("/authenticate", routes::authenticate, "authenticate");
+    router.post("/backoffice/authenticate", routes::backoffice_authenticate, "backoffice::authenticate");
 
     router
 }
