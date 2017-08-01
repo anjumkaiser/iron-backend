@@ -18,7 +18,7 @@ fn main() {
     let account_status_active_id = 1;
     let account_status_active_name = "Active";
 
-    let administrator_group_id: i64 = 0;
+    let administrator_group_id = Uuid::new_v4();
     let administrator_group_name = "Administrator";
 
     let administrator_user_id = Uuid::new_v4();
