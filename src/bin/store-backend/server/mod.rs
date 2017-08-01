@@ -1,8 +1,8 @@
-use std;
 use iron::prelude::*;
 use router::*;
-use persistent::Write;
+use persistent::{Read, Write};
 use config;
+use configmisc;
 use dal;
 
 mod routes;
@@ -15,18 +15,23 @@ fn configure_router() -> Router {
     router.get("/3/:name", routes::index_handler3, "parametric");
     router.get("/getdbtime", routes::get_db_time, "getdbtime");
     router.post("/authenticate", routes::authenticate, "authenticate");
-    router.post("/backoffice/authenticate", routes::backoffice_authenticate, "backoffice::authenticate");
+    router.post(
+        "/backoffice/authenticate",
+        routes::backoffice_authenticate,
+        "backoffice::authenticate",
+    );
 
     router
 }
 
 
 
-pub fn serve(c: config::Config, pg_dal: dal::DalPostgresPool) {
+pub fn serve(c: config::Config, pg_dal: dal::DalPostgresPool, config_misc: configmisc::ConfigMisc) {
 
     let router = configure_router();
 
     let mut middleware = Chain::new(router);
+    middleware.link_before(Read::<configmisc::ConfigMisc>::one(config_misc));
     middleware.link_before(Write::<dal::DalPostgresPool>::one(pg_dal));
 
     let iron = Iron::new(middleware);

@@ -3,19 +3,34 @@ use iron::status;
 use router::*;
 use bodyparser;
 
-use persistent::Write;
+use persistent::{Read, Write};
 use hyper::header::*;
 use hyper::mime::*;
 use dal;
 use std::ops::Deref;
 use r2d2_postgres;
 use time::{Timespec, Tm, at_utc};
+use chrono::prelude::*;
 use serde_json;
 use std;
 use std::str;
 
 use uuid;
 use bcrypt;
+
+use jsonwebtoken::{encode, Header};
+
+use configmisc;
+
+
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct ResponseData<T> {
+    pub success: bool,
+    pub data: T,
+    pub message: String,
+}
+
 
 
 pub fn index_handler(_: &mut Request) -> IronResult<Response> {
@@ -273,7 +288,27 @@ pub fn authenticate(req: &mut Request) -> IronResult<Response> {
 pub fn backoffice_authenticate(req: &mut Request) -> IronResult<Response> {
 
 
-    println!("in authenticate");
+    println!("in backoffice_authenticate");
+
+    #[derive(Serialize, Deserialize, Debug)]
+    struct PrivateClaims {
+        user_id: uuid::Uuid,
+        user_name: String,
+        role_id: uuid::Uuid,
+        role_name: String,
+    };
+
+    #[derive(Serialize, Deserialize, Debug)]
+    struct Claims {
+        sub: String, // subject
+        iss: String, // issuer
+        aud: Vec<String>, // audience
+        exp: i64, // expiration time
+        nbf: i64, // use not before
+        iat: i64, // issued at time
+        jti: String, // jwt id - case sensitive and unique among servers
+        pvt: PrivateClaims,
+    };
 
 
     let mut resp = Response::with((status::NotFound));
@@ -331,14 +366,27 @@ pub fn backoffice_authenticate(req: &mut Request) -> IronResult<Response> {
 
         println!("authuser = {:?}", authuser);
         //let query = format!("select * from user where userid={}", authuser.username);
-        let mut query : String = "SELECT ".to_string();
-        query += "a.id as user_id, a.name as user_name, b.password as user_password";
-        query += " FROM backoffice_user a, backoffice_user_password b";
-        query += " WHERE b.user_id = a.id";
-        query += " AND a.name=$1";
-        //query += " group by b.date";
-        query += " order by b.date";
+        let mut query: String = "SELECT ".to_string();
+        query += "u.id as user_id, u.name as user_name, p.password as user_password, r.id as role_id, r.name as role_name";
+        query += " FROM backoffice_user u, backoffice_user_password p, backoffice_user_role r";
+        query += " WHERE p.user_id = u.id";
+        query += " AND r.id = u.role_id";
+        query += " AND u.name=$1";
+        query += " order by p.date";
         println!("query [{}]", query);
+
+        let cfgmisc;
+
+        match req.get::<Read<configmisc::ConfigMisc>>() {
+            Ok(dcfgmisc) => {
+                cfgmisc = dcfgmisc.clone();
+            }
+            Err(_) => {
+                return Ok(resp);
+            }
+        }
+
+
 
         match req.get::<Write<dal::DalPostgresPool>>() {
             Ok(arcpool) => {
@@ -357,20 +405,104 @@ pub fn backoffice_authenticate(req: &mut Request) -> IronResult<Response> {
 
                                                 #[derive(Debug, Serialize, Deserialize)]
                                                 struct BackOfficeUserAuth {
-                                                    pub customer_id_uuid: uuid::Uuid,
+                                                    pub user_id: uuid::Uuid,
+                                                    pub user_name: String,
+                                                    pub role_id: uuid::Uuid,
+                                                    pub role_name: String,
                                                     pub password_hash: String,
                                                 }
 
                                                 let c: BackOfficeUserAuth = BackOfficeUserAuth {
-                                                    customer_id_uuid: row.get("user_id"),
+                                                    user_id: row.get("user_id"),
+                                                    user_name: row.get("user_name"),
                                                     password_hash: row.get("user_password"),
+                                                    role_id: row.get("role_id"),
+                                                    role_name: row.get("role_name"),
                                                 };
                                                 println!("c [{:?}]", c);
                                                 if let Ok(res) = bcrypt::verify(&authuser.password, &c.password_hash) {
                                                     println!("res [{:?}]", res);
-                                                    if res == true {
-                                                        resp = Response::with((status::Ok));
+
+                                                    if true != res {
+                                                        break;
                                                     }
+
+                                                    let mut jwt_issuer = String::new();
+                                                    {
+                                                        use url;
+                                                        let _url: url::Url = req.url.clone().into();
+                                                        jwt_issuer += _url.scheme();
+
+                                                        jwt_issuer += "://";
+                                                        if let Some(x) = _url.host_str() {
+                                                            println!("url host_str [{}]", x);
+                                                            jwt_issuer += x;
+                                                        }
+                                                    }
+
+                                                    let current_time = Utc::now();
+                                                    let jwt_issue_timestamp: i64 = current_time.timestamp();
+                                                    let jwt_exp_timestamp = jwt_issue_timestamp + (3600 * 1);
+
+                                                    /*
+                                                    let jissuetime = Utc.timestamp(jwt_issue_timestamp, 0);
+                                                    let jexptime = Utc.timestamp(jwt_exp_timestamp, 0);
+                                                    println!("jwt_iss_time {},  jwet_exp_time {}", jissuetime, jexptime);
+                                                    */
+
+                                                    //let remote_addr = .clone();
+
+                                                    let mut jwt_aud = Vec::new();
+                                                    jwt_aud.push(c.user_id.simple().to_string());
+                                                    jwt_aud.push(c.user_id.to_string());
+                                                    jwt_aud.push(c.user_name.clone());
+                                                    jwt_aud.push(req.remote_addr.to_string());
+
+
+                                                    println!("jwt_aud {:?}", jwt_aud);
+
+
+                                                    let private_claims = PrivateClaims {
+                                                        user_id: c.user_id,
+                                                        user_name: c.user_name,
+                                                        role_id: c.role_id,
+                                                        role_name: c.role_name,
+                                                    };
+
+                                                    let my_claims = Claims {
+                                                        sub: c.user_id.simple().to_string(), // populating uuid as simple format (hypen-less format) string
+                                                        iss: jwt_issuer,
+                                                        aud: jwt_aud,
+                                                        iat: jwt_issue_timestamp,
+                                                        exp: jwt_exp_timestamp,
+                                                        jti: uuid::Uuid::new_v4().simple().to_string(),
+                                                        nbf: jwt_issue_timestamp,
+                                                        pvt: private_claims,
+                                                    };
+
+                                                    let jwt_token: String;
+
+                                                    if let Ok(jtoken) = encode(
+                                                        &Header::default(),
+                                                        &my_claims,
+                                                        &cfgmisc.jwt_secret.clone().into_bytes(),
+                                                    )
+                                                    {
+                                                        jwt_token = jtoken;
+                                                    } else {
+                                                        return Ok(resp);
+                                                    }
+
+                                                    let resp_data: ResponseData<String> = ResponseData {
+                                                        success: true,
+                                                        data: jwt_token,
+                                                        message: "".to_owned(),
+                                                    };
+
+                                                    if let Ok(respjson) = serde_json::to_string(&resp_data) {
+                                                        resp = Response::with((status::Ok, respjson));
+                                                    }
+
                                                 }
 
                                                 break; // we only need first element

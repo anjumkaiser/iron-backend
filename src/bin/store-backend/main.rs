@@ -27,11 +27,15 @@ extern crate diesel;
 extern crate r2d2_diesel;
 extern crate dotenv;
 
+extern crate jsonwebtoken;
+extern crate url;
+
 extern crate time;
+extern crate chrono;
 
 extern crate common;
 
-use common::config;
+use common::{config, configmisc};
 
 
 mod server;
@@ -60,6 +64,15 @@ fn main() {
     // }
     //
 
-    server::serve(c, pg_dal);
+    // TODO  : this should come from an encrypted file
+    let config_misc = configmisc::ConfigMisc {
+        //jwt_secret: "secretsecret1234567890".to_string()
+        //jwt_secret: uuid::Uuid::new_v4().simple().to_string()
+        jwt_secret: uuid::Uuid::new_v4().to_string(),
+    };
+
+    println!("config_misc {:?}", config_misc);
+
+    server::serve(c, pg_dal, config_misc);
 
 }
