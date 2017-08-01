@@ -2,18 +2,19 @@ extern crate uuid;
 extern crate bcrypt;
 extern crate postgres;
 extern crate rpassword;
+extern crate rprompt;
 
 extern crate common;
 
 use uuid::Uuid;
 use postgres::{Connection, TlsMode};
 
+
 fn main() {
 
     let c = common::config::Config::load();
     //println!("{:?}", c);
     //println!("Config loaded");
-
 
     let account_status_active_id = 1;
     let account_status_active_name = "Active";
@@ -22,13 +23,24 @@ fn main() {
     let administrator_group_name = "Administrator";
 
     let administrator_user_id = Uuid::new_v4();
-    let administrator_user_name = "admin";
+    let administrator_user_name;
 
     //let mut password: String = String::new();
     let password;
 
     //let mut administrator_user_password_hash: String = String::new();
     let administrator_user_password_hash;
+
+
+    match rprompt::prompt_reply_stdout("Please provide user name for administrator: ") {
+        Err(_) => {
+            ::std::process::exit(1);
+        }
+        Ok(s) => {
+            administrator_user_name = s;
+        }
+    }
+
 
     match rpassword::prompt_password_stdout(&format!(
         "Please neter password for user '{}': ",
