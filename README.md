@@ -36,3 +36,29 @@ Create Database
 postgresql=# create database store owner store tablespace store;
 
 
+
+
+Building on Windows
+
+- Install Microsoft Visual Studio 2017 with VC++
+- Install Win64 OpenSSL v1.1.0f from slproweb.com/products/Win32OpenSSL.html
+- Add cacerts.pem to C:\OpenSSL-Win64\certs
+
+- Install Redis
+
+- Install Postgresql (9.6.3) Win64 binaries from EnterpriseDB [.zip file]
+- Copy pgsql\lib\libpq.lib to pgsql\lib\pq.lib
+
+- Add C:\pgsql\bin to PATH
+- Make sure pg_config.exe command runs and displays output
+- Add following entry to .cargo/config:
+
+[target.x86_64-pc-windows-msvc.pq]
+rustc-link-search = ["C:\\pgsql\\lib"]
+rustc-link-lib = ["pq"]
+
+- Clean previous builds
+cargo clean
+
+- Build:
+cargo build
