@@ -11,6 +11,10 @@ path = "src/bin/store-backend/main.rs"
 name = "store-backend-setup"
 path = "src/bin/store-backend-setup/main.rs"
 
+[[bin]]
+name = "store-email-notifier-daemon"
+path = "src/bin/store-email-notifier-daemon/main.rs"
+
 [dependencies]
 bcrypt = "0.1.3"
 bincode = "0.8.0"
@@ -23,6 +27,7 @@ iron = "0.5.1"
 iron-csrf = "0.2.2"
 iron-sessionstorage = "0.6.6"
 jsonwebtoken = "2.0.3"
+lettre = "0.6.2"
 mongodb = "0.3.2"
 mqtt = "0.1.3"
 params = "0.6.0"
