@@ -2,9 +2,11 @@
 authors = ["Muhammad Anjum Kaiser <anjumbutt@gmail.com>"]
 name = "store-backend"
 version = "0.1.0"
+
 [[bin]]
 name = "store-backend"
 path = "src/bin/store-backend/main.rs"
+
 [[bin]]
 name = "store-backend-setup"
 path = "src/bin/store-backend-setup/main.rs"
@@ -52,7 +54,11 @@ features = ["serde"]
 version = "0.4.0"
 
 [dependencies.diesel]
-features = ["postgres", "uuid", "serde_json"]
+features = [
+    "postgres",
+    "uuid",
+    "serde_json",
+]
 version = "0.15.2"
 
 [dependencies.diesel_codegen]
@@ -60,11 +66,18 @@ features = ["postgres"]
 version = "0.15.0"
 
 [dependencies.postgres]
-features = ["with-uuid", "with-time"]
+features = [
+    "with-uuid",
+    "with-time",
+]
 version = "0.15.1"
 
 [dependencies.uuid]
-features = ["serde", "v4", "v5"]
+features = [
+    "serde",
+    "v4",
+    "v5",
+]
 version = "0.5.1"
 
 [lib]
