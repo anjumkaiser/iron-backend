@@ -13,6 +13,10 @@ url = "localhost"
 user = "user"
 password = "password"
 
-
 [redis]
 url = "redis://localhost"
+
+[email_notifier]
+mailer = "localhost"
+username = ""
+password = ""

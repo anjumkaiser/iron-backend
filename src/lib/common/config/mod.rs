@@ -23,12 +23,21 @@ pub struct Redis {
 
 
 #[derive(Deserialize, Debug)]
+pub struct EmailNotifier {
+    pub mailer: String,
+    pub username: String,
+    pub password: String, 
+}
+
+
+#[derive(Deserialize, Debug)]
 pub struct Config {
     pub server_string: String,
     pub password_hash_cost: u32,
     pub server: Server,
     pub database: Database,
     pub redis: Redis,
+    pub email_notifier: EmailNotifier
 }
 
 
@@ -52,6 +61,11 @@ impl Config {
                 password: "".to_string(),
             },
             redis: Redis { url: "".to_string() },
+            email_notifier : EmailNotifier {
+                mailer: "".to_string(),
+                username: "".to_string(),
+                password: "".to_string()
+            }
         };
 
         c
