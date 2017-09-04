@@ -81,7 +81,7 @@ fn main() {
         std::process::exit(-1);
     }
 
-    let query = "SELECT * FROM email_notifications WHERE status='1'";
+    let query = "SELECT * FROM email_notification WHERE status='1'";
     let rows;
     if let Ok(x) = pgc.query(query, &[]) {
         rows = x;
