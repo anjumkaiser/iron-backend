@@ -1,3 +1,6 @@
+#[macro_use] extern crate log;
+extern crate log4rs;
+
 extern crate uuid;
 extern crate postgres;
 extern crate lettre;
@@ -13,6 +16,13 @@ use lettre::transport::smtp::{SmtpTransportBuilder, SmtpTransport, SecurityLevel
 use lettre::transport::smtp::authentication::Mechanism;
 use lettre::transport::smtp::SUBMISSION_PORT;
 use lettre::email::{EmailBuilder, Email};
+
+
+use log::LogLevelFilter;
+use log4rs::append::file::FileAppender;
+use log4rs::encode::pattern::PatternEncoder;
+use log4rs::config::{Appender, Config, Logger, Root};
+
 
 
 struct EmailData {
@@ -32,11 +42,25 @@ fn main() {
 
     let c = common::config::Config::load();
 
+    let log4rs_log_filenane = "log/email-notifier-daemon.log";
+
+    let log4rs_info= FileAppender::builder()
+        .encoder(Box::new(PatternEncoder::new("{d} - {m}{n}")))
+        .build(log4rs_log_filenane).unwrap();
+
+    let log4rs_config = log4rs::config::Config::builder()
+        .appender(Appender::builder().build("info", Box::new(log4rs_info)))
+        .build(Root::builder().appender("info").build(LogLevelFilter::Info))
+        .unwrap();
+
+    let log4rshandle = log4rs::init_config(log4rs_config).unwrap();
+
 
     let my_host_name: String;
     if let Some(x) = hostname::get_hostname() {
         my_host_name = x;
-        println!("My hostname: {}", my_host_name);
+        info!("My hostname: {}", my_host_name);
+
     } else {
         std::process::exit(-1);
     }
