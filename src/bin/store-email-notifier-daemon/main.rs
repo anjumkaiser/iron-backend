@@ -1,5 +1,6 @@
-#[macro_use] extern crate log;
-extern crate log4rs;
+#[macro_use]
+extern crate slog;
+extern crate slog_json;
 
 extern crate uuid;
 extern crate postgres;
@@ -17,13 +18,7 @@ use lettre::transport::smtp::authentication::Mechanism;
 use lettre::transport::smtp::SUBMISSION_PORT;
 use lettre::email::{EmailBuilder, Email};
 
-
-use log::LogLevelFilter;
-use log4rs::append::file::FileAppender;
-use log4rs::encode::pattern::PatternEncoder;
-use log4rs::config::{Appender, Config, Logger, Root};
-
-
+use slog::Drain;
 
 struct EmailData {
     pub mail_id: Uuid,
@@ -42,26 +37,37 @@ fn main() {
 
     let c = common::config::Config::load();
 
-    let log4rs_log_filenane = "log/email-notifier-daemon.log";
+    let log_file_nane = "log/email-notifier-daemon.log";
 
-    let log4rs_info= FileAppender::builder()
-        .encoder(Box::new(PatternEncoder::new("{d} - {m}{n}")))
-        .build(log4rs_log_filenane).unwrap();
+    let log_file_handle = match std::fs::OpenOptions::new()
+        .create(true)
+        .append(true)
+        .write(true)
+        .open(log_file_nane) {
+        Ok(x) => x,
+        Err(_) => {
+            std::process::exit(-1);
+        }
+    };
 
-    let log4rs_config = log4rs::config::Config::builder()
-        .appender(Appender::builder().build("info", Box::new(log4rs_info)))
-        .build(Root::builder().appender("info").build(LogLevelFilter::Info))
-        .unwrap();
+    let drain = std::sync::Mutex::new(slog_json::Json::default(log_file_handle)); //.map(slog::Fuse);
 
-    let log4rshandle = log4rs::init_config(log4rs_config).unwrap();
+    let root_logger = slog::Logger::root(
+        drain.fuse(),
+        o!("version" => env!("CARGO_PKG_VERSION"), "child" => "main"),
+    );
+    let logger = root_logger;
 
+
+    info!(logger, "Application started");
 
     let my_host_name: String;
     if let Some(x) = hostname::get_hostname() {
         my_host_name = x;
-        info!("My hostname: {}", my_host_name);
+        info!(logger, "My hostname: {}", my_host_name);
 
     } else {
+        error!(logger, "Unable to resolv own hostname, quitting");
         std::process::exit(-1);
     }
 
@@ -71,6 +77,7 @@ fn main() {
     if let Ok(x) = SmtpTransportBuilder::new((&c.email_notifier.mailer as &str, SUBMISSION_PORT)) {
         mailer_builder = x;
     } else {
+        error!(logger, "Unable to resolv SMTP transport, quitting");
         std::process::exit(-1); // exit program - mailer not foung
     }
 
@@ -102,6 +109,7 @@ fn main() {
     if let Ok(x) = Connection::connect(connstr, security) {
         pgc = x;
     } else {
+        error!(logger, "Unable to connect to database, quitting");
         std::process::exit(-1);
     }
 
@@ -111,6 +119,7 @@ fn main() {
         rows = x;
     } else {
         //pgc.close();
+        error!(logger, "Unable unable to execute query, quitting");
         std::process::exit(-1);
     }
 
@@ -154,7 +163,7 @@ fn main() {
         let send_result = mailer.send(email.clone());
         if send_result.is_err() {
 
-            println!("errror sending mail to {}", mail_data.mail_id);
+            error!(logger, "errror sending mail to {}", mail_data.mail_id);
             continue;
         }
 
@@ -164,12 +173,12 @@ fn main() {
         match pgc.execute(update_statement, &[&mail_data.mail_id]) {
             Ok(_) => {}
             Err(e) => {
-                println!("error returned {:?}", e);
-                let log_message = format!(
-                    "Unable to update status, email id will be resent {}",
-                    mail_data.mail_id
+                error!(
+                    logger,
+                    "Unable to update status, email id {} will be resent, error message returned {}",
+                    mail_data.mail_id,
+                    e
                 );
-                println!("{}", log_message);
             }
         }
     }
