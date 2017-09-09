@@ -4,17 +4,40 @@ extern crate postgres;
 extern crate rpassword;
 extern crate rprompt;
 
+#[macro_use]
+extern crate slog;
+extern crate slog_json;
+
 extern crate common;
 
 use uuid::Uuid;
 use postgres::{Connection, TlsMode};
 
+use slog::Drain;
 
 fn main() {
 
+    let log_file_nane = "log/setup.log";
+    let log_file_handle = match std::fs::OpenOptions::new()
+        .create(true)
+        .append(true)
+        .write(true)
+        .open(log_file_nane) {
+        Ok(x) => x,
+        Err(_) => {
+            std::process::exit(-1);
+        }
+    };
+    let drain = std::sync::Mutex::new(slog_json::Json::default(log_file_handle));
+    let root_logger = slog::Logger::root(
+        drain.fuse(),
+        o!("version" => env!("CARGO_PKG_VERSION"), "child" => "main"),
+    );
+    let logger = root_logger;
+
     let c = common::config::Config::load();
     //println!("{:?}", c);
-    //println!("Config loaded");
+    info!(logger, "Config loaded");
 
     let account_status_active_id = 1;
     let account_status_active_name = "Active";
@@ -23,46 +46,41 @@ fn main() {
     let administrator_group_name = "Administrator";
 
     let administrator_user_id = Uuid::new_v4();
-    let administrator_user_name;
 
-    //let mut password: String = String::new();
-    let password;
-
-    //let mut administrator_user_password_hash: String = String::new();
-    let administrator_user_password_hash;
-
-
-    match rprompt::prompt_reply_stdout("Please provide user name for administrator: ") {
-        Err(_) => {
-            ::std::process::exit(1);
+    let administrator_user_name = match rprompt::prompt_reply_stdout("Please provide user name for administrator: ") {
+        Ok(x) => x,
+        Err(e) => {
+            error!(logger, "Error reading username, error message {}", e);
+            std::process::exit(1);
         }
-        Ok(s) => {
-            administrator_user_name = s;
-        }
-    }
+    };
 
-
-    match rpassword::prompt_password_stdout(&format!(
-        "Please neter password for user '{}': ",
+    let password = match rpassword::prompt_password_stdout(&format!(
+        "Please enter password for user '{}': ",
         administrator_user_name
     )) {
 
-        Ok(x) => password = x,
+        Ok(x) => x,
         Err(e) => {
-            println!("Error reading password {}", e);
-            ::std::process::exit(1);
+            error!(logger, "Error reading password, error message {}", e);
+            std::process::exit(1);
         }
+    };
 
-    }
-    match bcrypt::hash(&password, c.password_hash_cost) {
+    let administrator_user_password_hash = match bcrypt::hash(&password, c.password_hash_cost) {
         Ok(pw_hash) => {
-            administrator_user_password_hash = pw_hash;
+            info!(logger, "Successfully encrypted password");
+            pw_hash
         }
-        _ => {
-            println!("Unable to read password / password error, quiting");
-            ::std::process::exit(1);
+        Err(e) => {
+            error!(
+                logger,
+                "Unable to encrypt password, quiting, error message {}",
+                e
+            );
+            std::process::exit(1);
         }
-    }
+    };
 
     let mut connstr = "postgres://".to_string();
     if "" != c.database.user {
@@ -79,7 +97,6 @@ fn main() {
 
     if let Ok(pgc) = Connection::connect(connstr, security) {
 
-
         let mut res;
 
         if let Ok(txn) = pgc.transaction() {
@@ -94,11 +111,10 @@ fn main() {
 
             match res {
                 Ok(_) => {
-                    //println!("{:?}", e);
+                    info!(logger, "Added backoffice_user_status");
                 }
                 Err(e) => {
-                    //println!("{:?}", e);
-                    println!("Unable to add backoffice_user_status, {}", e);
+                    error!(logger, "Unable to add backoffice_user_status, {}", e);
                     should_commit = false;
                 }
             }
@@ -113,8 +129,7 @@ fn main() {
                     //println!("{:?}", e);
                 }
                 Err(e) => {
-                    //println!("{:?}", e);
-                    println!("Unable to add backoffice_user_role, {}", e);
+                    error!(logger, "Unable to add backoffice_user_role, {}", e);
                     should_commit = false;
                 }
             }
@@ -131,15 +146,19 @@ fn main() {
 
             match res {
                 Ok(_) => {
-                    //println!("{:?}", e);
+                    info!(
+                        logger,
+                        "Successfully added backoffice user id {} name {} groupid {}",
+                        &administrator_user_id,
+                        &administrator_user_name,
+                        &administrator_group_id
+                    );
                 }
                 Err(e) => {
-                    //println!("{:?}", e);
-                    println!("Unable to add backoffice_user_password, {}", e);
+                    error!(logger, "Unable to add backoffice_user, {}", e);
                     should_commit = false;
                 }
             }
-
 
             res = txn.execute(
                 "INSERT INTO backoffice_user_password (user_id, password, date) VALUES ($1, $2, now())",
@@ -148,11 +167,10 @@ fn main() {
 
             match res {
                 Ok(_) => {
-                    //println!("{:?}", e);
+                    info!(logger, "Successfully updated user password");
                 }
                 Err(e) => {
-                    println!("Unable to add backoffice_user_password, {}", e);
-                    //println!("{:?}", e);
+                    error!(logger, "Unable to add backoffice_user_password, {}", e);
                     should_commit = false;
                 }
             }
@@ -160,22 +178,28 @@ fn main() {
 
             if should_commit {
                 txn.set_commit();
-            //println!("txn will commit");
             } else {
-                println!("All transactions will be rolled back.");
+                error!(logger, "All transactions will be rolled back.");
             }
 
             match txn.finish() {
                 Ok(_) => {
-                    println!("Transaction operation completed succesfully.");
+                    info!(logger, "Transaction operation completed succesfully.");
                 }
                 Err(e) => {
-                    println!("Transaction operation completion unsuccessful,  {:?}", e);
+                    info!(
+                        logger,
+                        "Transaction operation completion unsuccessful,  {}",
+                        e
+                    );
                 }
             }
-
+        } else {
+            error!(logger, "Unable to begin transaction, quitting");
+            std::process::exit(1);
         }
-
+    } else {
+        error!(logger, "Unable to connect to database, quitting");
+        std::process::exit(1);
     }
-
 }
