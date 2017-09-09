@@ -67,7 +67,7 @@ fn main() {
     //let logger = root_logger;
 
     let c = config::Config::load();
-    let pg_dal = dal::DalPostgresPool::get_postgres_pool(&c);
+    let pg_dal = dal::DalPostgresPool::get_postgres_pool(root_logger.new(o!("child" => "DalPostgresPool")), &c);
     // let pg_rw_pool = pg_dal.rw_pool;
     // let pg_ro_pool = pg_dal.ro_pool;
     // let dal::DalPostgresPool { rw_pool: pg_rw_pool, ro_pool: pg_ro_pool } =

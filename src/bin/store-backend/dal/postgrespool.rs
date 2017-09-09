@@ -1,5 +1,5 @@
-use std::process;
-
+use slog;
+use std;
 use r2d2;
 use r2d2_postgres::{PostgresConnectionManager, TlsMode};
 use r2d2::Pool;
@@ -14,11 +14,11 @@ pub struct DalPostgresPool {
 
 
 impl DalPostgresPool {
-    pub fn get_postgres_pool(dbcfg: &config::Config) -> DalPostgresPool {
+    pub fn get_postgres_pool(logger: slog::Logger, dbcfg: &config::Config) -> DalPostgresPool {
 
-        let d;
+        info!(logger, "Creating Postgres connection pool");
+
         let config = r2d2::Config::default();
-        let manager;
 
         let mut url = "postgres://".to_string();
         if "" != dbcfg.database.user {
@@ -31,31 +31,35 @@ impl DalPostgresPool {
         }
         url += &dbcfg.database.url;
 
-        match PostgresConnectionManager::new(url, TlsMode::None) {
-            Ok(value) => {
-                manager = value;
+        let manager = match PostgresConnectionManager::new(url, TlsMode::None) {
+            Ok(x) => x,
+            Err(e) => {
+                error!(
+                    logger,
+                    "Unable to create Postgres connection manager, error message {}",
+                    e
+                );
+                std::process::exit(1);
             }
-            Err(_) => {
-                println!("Unable to create Postgres connection manager.");
-                process::exit(1);
-            }
-        }
+        };
 
         match r2d2::Pool::new(config, manager) {
-            Err(_) => {
-                println!("Unable to create Postgres connection pool.");
-                process::exit(1);
+            Err(e) => {
+                error!(
+                    logger,
+                    "Unable to create Postgres connection pool. error message {}",
+                    e
+                );
+                std::process::exit(1);
             }
             Ok(p) => {
-                d = DalPostgresPool {
+                info!(logger, "Successfully created connection pool");
+                DalPostgresPool {
                     rw_pool: p,
                     ro_pool: None,
-                };
-
-                d
+                }
             }
         }
-
     }
 }
 
