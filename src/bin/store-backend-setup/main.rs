@@ -36,7 +36,6 @@ fn main() {
     let c = common::config::Config::load(root_logger.new(o!("child" => "Config")));
     let logger = root_logger;
 
-    //println!("{:?}", c);
     info!(logger, "Config loaded");
 
     let account_status_active_id = 1;
@@ -125,9 +124,7 @@ fn main() {
             );
 
             match res {
-                Ok(_) => {
-                    //println!("{:?}", e);
-                }
+                Ok(_) => {}
                 Err(e) => {
                     error!(logger, "Unable to add backoffice_user_role, {}", e);
                     should_commit = false;
