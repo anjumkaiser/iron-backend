@@ -33,15 +33,38 @@ extern crate url;
 extern crate time;
 extern crate chrono;
 
+#[macro_use]
+extern crate slog;
+extern crate slog_json;
+
 extern crate common;
 
 use common::{config, configmisc};
 
+use slog::Drain;
 
 mod server;
 mod dal;
 
 fn main() {
+
+    let log_file_nane = "log/store-backend.log";
+    let log_file_handle = match std::fs::OpenOptions::new()
+        .create(true)
+        .append(true)
+        .write(true)
+        .open(log_file_nane) {
+        Ok(x) => x,
+        Err(_) => {
+            std::process::exit(-1);
+        }
+    };
+    let drain = std::sync::Mutex::new(slog_json::Json::default(log_file_handle));
+    let root_logger = slog::Logger::root(
+        drain.fuse(),
+        o!("version" => env!("CARGO_PKG_VERSION"), "child" => "main"),
+    );
+    //let logger = root_logger;
 
     let c = config::Config::load();
     let pg_dal = dal::DalPostgresPool::get_postgres_pool(&c);
@@ -71,8 +94,11 @@ fn main() {
         jwt_secret: uuid::Uuid::new_v4().to_string(),
     };
 
-    println!("config_misc {:?}", config_misc);
-
-    server::serve(c, pg_dal, config_misc);
+    server::serve(
+        root_logger.new(o!("child" => "server")),
+        c,
+        pg_dal,
+        config_misc,
+    );
 
 }

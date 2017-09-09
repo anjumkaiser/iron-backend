@@ -1,3 +1,4 @@
+use slog;
 use iron::prelude::*;
 use router::*;
 use persistent::{Read, Write};
@@ -26,7 +27,7 @@ fn configure_router() -> Router {
 
 
 
-pub fn serve(c: config::Config, pg_dal: dal::DalPostgresPool, config_misc: configmisc::ConfigMisc) {
+pub fn serve(logger: slog::Logger, c: config::Config, pg_dal: dal::DalPostgresPool, config_misc: configmisc::ConfigMisc) {
 
     let router = configure_router();
 
@@ -47,27 +48,29 @@ pub fn serve(c: config::Config, pg_dal: dal::DalPostgresPool, config_misc: confi
             Ok(tls) => {
                 match iron.https(&*ipaddr, tls) {
                     Ok(listening) => {
-                        println!(
+                        info!(
+                            logger,
                             "{} secure server started, listening on: https://{}/",
                             c.server_string,
                             listening.socket
                         )
                     }
-                    Err(e) => println!("Unable to listen, error returned {:?}", e),
+                    Err(e) => error!(logger, "Unable to listen, error returned {}", e),
                 }
             }
-            Err(e) => println!("unable to listen {:?}", e),
+            Err(e) => error!(logger, "unable to listen {}", e),
         }
     } else {
         match iron.http(&*ipaddr) {
             Ok(listening) => {
-                println!(
+                info!(
+                    logger,
                     "{} server started, listening on: http://{}/",
                     c.server_string,
                     listening.socket
                 )
             }
-            Err(e) => println!("Unable to listen, error returned {:?}", e),
+            Err(e) => error!(logger, "Unable to listen, error returned {:?}", e),
         }
     }
 
