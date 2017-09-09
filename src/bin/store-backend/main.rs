@@ -64,20 +64,16 @@ fn main() {
         drain.fuse(),
         o!("version" => env!("CARGO_PKG_VERSION"), "child" => "main"),
     );
-    //let logger = root_logger;
 
-    let c = config::Config::load();
-    let pg_dal = dal::DalPostgresPool::get_postgres_pool(
-        root_logger.new(o!("child" => "DalPostgresPool")),
-        &c,
-    );
+    let c = config::Config::load(root_logger.new(o!("child" => "ConfigLoader")));
+
+    let pg_dal = dal::DalPostgresPool::get_postgres_pool(root_logger.new(o!("child" => "DalPostgresPool")), &c);
     // let pg_rw_pool = pg_dal.rw_pool;
     // let pg_ro_pool = pg_dal.ro_pool;
     // let dal::DalPostgresPool { rw_pool: pg_rw_pool, ro_pool: pg_ro_pool } =
     //    dal::DalPostgresPool::get_postgres_pool(&c);
 
-    let redis_dal =
-        dal::DalRedisPool::get_redis_pool(root_logger.new(o!("child" => "DalRedisPool")), &c);
+    let redis_dal = dal::DalRedisPool::get_redis_pool(root_logger.new(o!("child" => "DalRedisPool")), &c);
 
     //let diesel_pg_dal = dal::DalDieselPool::get_diesel_pool(root_logger.new(o!("child" => "DalDieselPool")), &c);
 

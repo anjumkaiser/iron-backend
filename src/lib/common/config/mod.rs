@@ -1,3 +1,5 @@
+use slog;
+
 #[derive(Deserialize, Debug)]
 pub struct Server {
     pub ip: String,
@@ -26,7 +28,7 @@ pub struct Redis {
 pub struct EmailNotifier {
     pub mailer: String,
     pub username: String,
-    pub password: String, 
+    pub password: String,
 }
 
 
@@ -37,7 +39,7 @@ pub struct Config {
     pub server: Server,
     pub database: Database,
     pub redis: Redis,
-    pub email_notifier: EmailNotifier
+    pub email_notifier: EmailNotifier,
 }
 
 
@@ -61,18 +63,18 @@ impl Config {
                 password: "".to_string(),
             },
             redis: Redis { url: "".to_string() },
-            email_notifier : EmailNotifier {
+            email_notifier: EmailNotifier {
                 mailer: "".to_string(),
                 username: "".to_string(),
-                password: "".to_string()
-            }
+                password: "".to_string(),
+            },
         };
 
         c
     }
 
 
-    pub fn load() -> Config {
+    pub fn load(logger: slog::Logger) -> Config {
         use std;
         use std::io::prelude::*;
         use std::fs::File;
@@ -84,7 +86,8 @@ impl Config {
         let mut config_file_handle;
         match File::open(config_file_name) {
             Err(e) => {
-                println!(
+                error!(
+                    logger,
                     "Unable to open config file {}, error {:?}.",
                     config_file_name,
                     e
@@ -98,7 +101,8 @@ impl Config {
 
         let mut config_file_buffer = String::new();
         if let Err(e) = config_file_handle.read_to_string(&mut config_file_buffer) {
-            println!(
+            error!(
+                logger,
                 "Unable to read config file {}, error {}.",
                 config_file_name,
                 e
@@ -107,15 +111,14 @@ impl Config {
         }
 
         match toml::from_str(&config_file_buffer) {
+            Ok(x) => {
+                c = x;
+            }
             Err(e) => {
-                println!("Unable to parse config. Error returned: {}", e);
+                error!(logger, "Unable to parse config. Error returned: {}", e);
                 std::process::exit(1);
             }
-            Ok(value) => {
-                c = value;
-            }
         }
-
         c
     }
 }

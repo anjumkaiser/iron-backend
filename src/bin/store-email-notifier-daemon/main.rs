@@ -35,10 +35,7 @@ struct EmailData {
 
 fn main() {
 
-    let c = common::config::Config::load();
-
     let log_file_nane = "log/email-notifier-daemon.log";
-
     let log_file_handle = match std::fs::OpenOptions::new()
         .create(true)
         .append(true)
@@ -49,15 +46,13 @@ fn main() {
             std::process::exit(-1);
         }
     };
-
-    let drain = std::sync::Mutex::new(slog_json::Json::default(log_file_handle)); //.map(slog::Fuse);
-
+    let drain = std::sync::Mutex::new(slog_json::Json::default(log_file_handle));
     let root_logger = slog::Logger::root(
         drain.fuse(),
         o!("version" => env!("CARGO_PKG_VERSION"), "child" => "main"),
     );
+    let c = common::config::Config::load(root_logger.new(o!("child" => "Config")));
     let logger = root_logger;
-
 
     info!(logger, "Application started");
 

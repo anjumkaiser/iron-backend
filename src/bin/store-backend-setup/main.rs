@@ -33,9 +33,9 @@ fn main() {
         drain.fuse(),
         o!("version" => env!("CARGO_PKG_VERSION"), "child" => "main"),
     );
+    let c = common::config::Config::load(root_logger.new(o!("child" => "Config")));
     let logger = root_logger;
 
-    let c = common::config::Config::load();
     //println!("{:?}", c);
     info!(logger, "Config loaded");
 
