@@ -73,7 +73,7 @@ fn main() {
     // let dal::DalPostgresPool { rw_pool: pg_rw_pool, ro_pool: pg_ro_pool } =
     //    dal::DalPostgresPool::get_postgres_pool(&c);
 
-    let redis_dal = dal::DalRedisPool::get_redis_pool(&c);
+    let redis_dal = dal::DalRedisPool::get_redis_pool(root_logger.new(o!("child" => "DalRedisPool")), &c);
 
     // let diesel_pg_dal = dal::DalDieselPool::get_diesel_pool(&c);
 

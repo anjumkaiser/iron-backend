@@ -1,4 +1,5 @@
-use std::process;
+use slog;
+use std;
 
 use r2d2;
 use r2d2_redis::RedisConnectionManager;
@@ -14,38 +15,41 @@ pub struct DalRedisPool {
 
 
 impl DalRedisPool {
-    pub fn get_redis_pool(dbcfg: &config::Config) -> DalRedisPool {
+    pub fn get_redis_pool(logger: slog::Logger, dbcfg: &config::Config) -> DalRedisPool {
 
-        let d;
+        info!(logger, "Creating Postgres connection pool");
+
         let config = r2d2::Config::default();
-        let manager;
 
         let url = dbcfg.redis.url.clone();
-        match RedisConnectionManager::new(url.as_str()) {
-            Ok(value) => {
-                manager = value;
+        let manager = match RedisConnectionManager::new(url.as_str()) {
+            Ok(x) => x,
+            Err(e) => {
+                error!(
+                    logger,
+                    "Unable to create Redis connection manager. error message {}",
+                    e
+                );
+                std::process::exit(1);
             }
-            Err(_) => {
-                println!("Unable to create Redis connection manager.");
-                process::exit(1);
-            }
-        }
+        };
 
         match r2d2::Pool::new(config, manager) {
-            Err(_) => {
-                println!("Unable to create Redis connection pool.");
-                process::exit(1);
+            Err(e) => {
+                error!(
+                    logger,
+                    "Unable to create Redis connection pool. error message {}",
+                    e
+                );
+                std::process::exit(1);
             }
             Ok(p) => {
-                d = DalRedisPool {
+                DalRedisPool {
                     rw_pool: p,
                     ro_pool: None,
-                };
-
-                d
+                }
             }
         }
-
     }
 }
 
