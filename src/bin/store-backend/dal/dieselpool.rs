@@ -1,4 +1,5 @@
-use std::process;
+use slog;
+use std;
 
 use diesel::pg::PgConnection;
 use r2d2;
@@ -15,27 +16,29 @@ pub struct DalDieselPool {
 
 
 impl DalDieselPool {
-    pub fn get_diesel_pool(dbcfg: &config::Config) -> DalDieselPool {
+    pub fn get_diesel_pool(logger: slog::Logger, dbcfg: &config::Config) -> DalDieselPool {
 
-        let d;
+        info!(logger, "Creating Diesel pool");
+
         let config = r2d2::Config::default();
         let manager = ConnectionManager::<PgConnection>::new(dbcfg.database.url.clone());
 
         match r2d2::Pool::new(config, manager) {
-            Err(_) => {
-                println!("Unable to create Postgres connection pool.");
-                process::exit(1);
+            Err(e) => {
+                error!(
+                    logger,
+                    "Unable to create Postgres connection pool. error message {}",
+                    e
+                );
+                std::process::exit(1);
             }
             Ok(p) => {
-                d = DalDieselPool {
+                DalDieselPool {
                     rw_pool: p,
                     ro_pool: None,
-                };
-
-                d
+                }
             }
         }
-
     }
 }
 
