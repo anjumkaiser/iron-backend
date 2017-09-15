@@ -22,6 +22,10 @@ use jsonwebtoken::{encode, Header};
 
 use configmisc;
 
+use slog;
+
+use server::loggerenclave::LoggerEnclave;
+
 
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -32,8 +36,19 @@ pub struct ResponseData<T> {
 }
 
 
+pub fn index_handler(req: &mut Request) -> IronResult<Response> {
 
-pub fn index_handler(_: &mut Request) -> IronResult<Response> {
+    let logger: slog::Logger;
+    if let Ok(logger_enclave) = req.get::<Read<LoggerEnclave>>() {
+        logger = logger_enclave.clone().logger.new(
+            o!("path" => req.url.to_string()),
+        );
+    } else {
+        return Ok(Response::with(("", status::BadRequest)));
+    }
+
+    info!(logger, "inside handler");
+
     let respdata = "Hello";
     Ok(Response::with((status::Ok, respdata)))
 }
@@ -55,7 +70,9 @@ pub fn index_handler3(req: &mut Request) -> IronResult<Response> {
 
     let mut resp = Response::with((status::NotFound));
 
-    println!("Request recvd : {:?}", req);
+    //let logger = req.get_logger();
+
+    //info!(logger, "Request recvd : {:?}", req);
 
     println!("Url: {:?}", req.url.path());
     if let Some(params) = req.extensions.get::<Router>() {

@@ -5,7 +5,9 @@ use persistent::{Read, Write};
 use config;
 use configmisc;
 use dal;
+use iron_slog::{LoggerMiddleware, DefaultLogFormatter};
 
+mod loggerenclave;
 mod routes;
 
 
@@ -31,7 +33,17 @@ pub fn serve(logger: slog::Logger, c: config::Config, pg_dal: dal::DalPostgresPo
 
     let router = configure_router();
 
-    let mut middleware = Chain::new(router);
+    let logger_formatter = DefaultLogFormatter;
+    let logger_middleware = LoggerMiddleware::new(
+        router,
+        logger.new(o!("child" => "routes")),
+        logger_formatter,
+    );
+
+    let logger_enclave: loggerenclave::LoggerEnclave = loggerenclave::LoggerEnclave { logger: logger.new(o!("child" => "rotues")) };
+
+    let mut middleware = Chain::new(logger_middleware);
+    middleware.link_before(Read::<loggerenclave::LoggerEnclave>::one(logger_enclave));
     middleware.link_before(Read::<configmisc::ConfigMisc>::one(config_misc));
     middleware.link_before(Write::<dal::DalPostgresPool>::one(pg_dal));
 

@@ -36,6 +36,7 @@ extern crate chrono;
 #[macro_use]
 extern crate slog;
 extern crate slog_json;
+extern crate iron_slog;
 
 extern crate common;
 
@@ -80,10 +81,10 @@ fn main() {
     // SERDE JSON
     // {
     // let json_c = serde_json::to_string(&c).unwrap();
-    // println!("c : [{}]", json_c);
+    // info!(root_logger, "c : [{}]", json_c);
     //
     // let des_c: config::Config = serde_json::from_str(&json_c).unwrap();
-    // println!("des_c [{:?}", des_c);
+    // info!(root_logger, "des_c [{:?}", des_c);
     // }
     //
 
