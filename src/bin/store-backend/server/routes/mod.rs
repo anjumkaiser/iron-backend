@@ -98,66 +98,79 @@ pub fn get_db_time(req: &mut Request) -> IronResult<Response> {
     info!(logger, "in get_db_time");
     let mut resp = Response::with((status::NotFound));
 
-    match req.get::<Write<dal::DalPostgresPool>>() {
-        Ok(arcpool) => {
-            match arcpool.lock() {
-                Ok(x) => {
-                    let pool = x.deref();
-                    if let Ok(conn) = pool.rw_pool.get() {
-                        if let Ok(stmt) = conn.prepare("SELECT 1 as id, 'someone' as name, now() as timestamp") {
-                            if let Ok(rows) = stmt.query(&[]) {
-                                for row in rows.iter() {
-                                    let _id: i32 = row.get("id");
-                                    let _name: String = row.get("name");
-                                    let _timestamp: Timespec = row.get("timestamp");
-                                    let utc_tm: Tm = at_utc(_timestamp);
-                                    let local_tm: Tm = utc_tm.to_local();
-                                    info!(
-                                        logger,
-                                        "row [{}, {}, utc {}, local {}] ",
-                                        _id,
-                                        _name,
-                                        utc_tm.asctime(),
-                                        local_tm.asctime()
-                                    );
-
-                                    let data: DbData = DbData {
-                                        Id: _id,
-                                        Name: _name,
-                                        Timestamp: _timestamp.sec,
-                                    };
-
-                                    match serde_json::to_string(&data) {
-                                        Ok(json_resp) => {
-                                            resp = Response::with((status::Ok, json_resp));
-                                            resp.headers.set(ContentType(
-                                                Mime(TopLevel::Application, SubLevel::Json, vec![]),
-                                            ));
-                                        }
-                                        _ => {}
-                                    }
-
-                                    break; // we only need first element
-                                }
-                            } else {
-                                info!(logger, "unable to execute query");
-                            }
-                        } else {
-                            info!(logger, "unable to prepare statement");
-                        }
-                    } else {
-                        info!(logger, "unable to get connection from pool");
-                    }
-                }
-                Err(e) => {
-                    info!(logger, "Error {:?}", e);
-                }
-            }
-        }
+    let arcpool = match req.get::<Write<dal::DalPostgresPool>>() {
+        Ok(x) => x,
         Err(e) => {
             info!(logger, " Error {:?}", e);
+            return Ok(resp);
         }
+    };
+    let lockedpool = match arcpool.lock() {
+        Ok(x) => x,
+        Err(e) => {
+            info!(logger, "Error {:?}", e);
+            return Ok(resp);
+        }
+    };
+
+
+    let pool = lockedpool.deref();
+    let conn = match pool.rw_pool.get() {
+        Ok(x) => x,
+        Err(e) => {
+            info!(logger, "iable to deref connection pool");
+            return Ok(resp);
+        }
+    };
+
+    let stmt = match conn.prepare("SELECT 1 as id, 'someone' as name, now() as timestamp") {
+        Ok(x) => x,
+        Err(e) => {
+            info!(logger, "unable to prepare statement");
+            return Ok(resp);
+        }
+    };
+
+
+    let rows = match stmt.query(&[]) {
+        Ok(x) => x,
+        Err(e) => {
+            info!(logger, "unable to execute query");
+            return Ok(resp);
+        }
+    };
+
+    for row in rows.iter() {
+        let _id: i32 = row.get("id");
+        let _name: String = row.get("name");
+        let _timestamp: Timespec = row.get("timestamp");
+        let utc_tm: Tm = at_utc(_timestamp);
+        let local_tm: Tm = utc_tm.to_local();
+        info!(
+            logger,
+            "row [{}, {}, utc {}, local {}] ",
+            _id,
+            _name,
+            utc_tm.asctime(),
+            local_tm.asctime()
+        );
+
+        let data: DbData = DbData {
+            Id: _id,
+            Name: _name,
+            Timestamp: _timestamp.sec,
+        };
+
+        if let Ok(json_resp) = serde_json::to_string(&data) {
+            resp = Response::with((status::Ok, json_resp));
+            resp.headers.set(ContentType(
+                Mime(TopLevel::Application, SubLevel::Json, vec![]),
+            ));
+        };
+
+        break; // we only need first element
     }
+
 
     Ok(resp)
 }
