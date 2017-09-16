@@ -7,6 +7,7 @@ use configmisc;
 use dal;
 use iron_slog::{LoggerMiddleware, DefaultLogFormatter};
 
+#[macro_use]
 mod loggerenclave;
 mod routes;
 

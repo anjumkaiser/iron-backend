@@ -38,14 +38,7 @@ pub struct ResponseData<T> {
 
 pub fn index_handler(req: &mut Request) -> IronResult<Response> {
 
-    let logger: slog::Logger;
-    if let Ok(logger_enclave) = req.get::<Read<LoggerEnclave>>() {
-        logger = logger_enclave.clone().logger.new(
-            o!("path" => req.url.to_string()),
-        );
-    } else {
-        return Ok(Response::with(("", status::BadRequest)));
-    }
+    let logger: slog::Logger = get_logger!(req);
 
     info!(logger, "inside handler");
 
