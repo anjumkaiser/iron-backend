@@ -221,69 +221,87 @@ pub fn authenticate(req: &mut Request) -> IronResult<Response> {
         pub password: String,
     };
 
-    if let Ok(Some(authuser)) = req.get::<bodyparser::Struct<AuthUser>>() {
 
-        info!(logger, "authuser = {:?}", authuser);
-        //let query = format!("select * from user where userid={}", authuser.username);
-        let query = "select * from customer_local_auth where local_id=$1";
-        info!(logger, "query [{}]", query);
+    let authuser = match req.get::<bodyparser::Struct<AuthUser>>() {
+        Ok(Some(x)) => x,
+        _ => {
+            error!(logger, "unable to get authuser from Request");
+            return Ok(resp);
+        }
+    };
 
-        match req.get::<Write<dal::DalPostgresPool>>() {
-            Ok(arcpool) => {
-                match arcpool.lock() {
-                    Ok(x) => {
-                        let pool = x.deref();
-                        if let Ok(conn) = pool.rw_pool.get() {
-                            match conn.prepare(&query) {
-                                Ok(stmt) => {
-                                    if let Ok(rows) = stmt.query(&[&"admin".to_string()]) {
-                                        if rows.is_empty() {
-                                            info!(logger, "empty rows");
-                                        } else {
+    info!(logger, "authuser = {:?}", authuser);
+    //let query = format!("select * from user where userid={}", authuser.username);
+    let query = "select * from customer_local_auth where local_id=$1";
+    info!(logger, "query [{}]", query);
 
-                                            for row in rows.iter() {
+    let arcpool = match req.get::<Write<dal::DalPostgresPool>>() {
+        Ok(x) => x,
+        Err(e) => {
+            info!(logger, " Error {:?}", e);
+            return Ok(resp);
+        }
+    };
 
-                                                #[derive(Debug, Serialize, Deserialize)]
-                                                struct CustomerLocalAuth {
-                                                    pub customer_id_uuid: uuid::Uuid,
-                                                    pub password_hash: String,
-                                                }
+    let locked_pool = match arcpool.lock() {
+        Ok(x) => x,
+        Err(e) => {
+            info!(logger, "Error {:?}", e);
+            return Ok(resp);
+        }
+    };
 
-                                                let c: CustomerLocalAuth = CustomerLocalAuth {
-                                                    customer_id_uuid: row.get("customer_id_uuid"),
-                                                    password_hash: row.get("password_hash"),
-                                                };
-                                                info!(logger, "c [{:?}]", c);
-                                                if let Ok(res) = bcrypt::verify(&authuser.password, &c.password_hash) {
-                                                    info!(logger, "res [{:?}]", res);
-                                                    if res == true {
-                                                        resp = Response::with((status::Ok));
-                                                    }
-                                                }
 
-                                                break; // we only need first element
-                                            }
-                                        }
-                                    } else {
-                                        info!(logger, "unable to execute query");
-                                    }
-                                }
-                                Err(e) => {
-                                    info!(logger, "unable to prepare statement e {:?}", e);
-                                }
-                            }
-                        } else {
-                            info!(logger, "unable to get connection from pool");
-                        }
-                    }
-                    Err(e) => {
-                        info!(logger, "Error {:?}", e);
-                    }
+    let pool = locked_pool.deref();
+    let conn = match pool.rw_pool.get() {
+        Ok(x) => x,
+        Err(e) => {
+            info!(logger, "unable to get connection from pool");
+            return Ok(resp);
+        }
+    };
+
+    let stmt = match conn.prepare(&query) {
+        Ok(x) => x,
+        Err(e) => {
+            info!(logger, "unable to prepare statement e {:?}", e);
+            return Ok(resp);
+        }
+    };
+
+    let rows = match stmt.query(&[&"admin".to_string()]) {
+        Ok(x) => x,
+        Err(e) => {
+            info!(logger, "unable to execute query");
+            return Ok(resp);
+        }
+    };
+
+
+    if rows.is_empty() {
+        info!(logger, "empty rows");
+    } else {
+        for row in rows.iter() {
+
+            #[derive(Debug, Serialize, Deserialize)]
+            struct CustomerLocalAuth {
+                pub customer_id_uuid: uuid::Uuid,
+                pub password_hash: String,
+            }
+
+            let c: CustomerLocalAuth = CustomerLocalAuth {
+                customer_id_uuid: row.get("customer_id_uuid"),
+                password_hash: row.get("password_hash"),
+            };
+            info!(logger, "c [{:?}]", c);
+            if let Ok(res) = bcrypt::verify(&authuser.password, &c.password_hash) {
+                info!(logger, "res [{:?}]", res);
+                if res == true {
+                    resp = Response::with((status::Ok));
                 }
             }
-            Err(e) => {
-                info!(logger, " Error {:?}", e);
-            }
+
+            break; // we only need first element
         }
     }
 
