@@ -63,16 +63,16 @@ pub fn index_handler3(req: &mut Request) -> IronResult<Response> {
 
     let mut resp = Response::with((status::NotFound));
 
-    //let logger = req.get_logger();
+    let logger: slog::Logger = get_logger!(req);
 
-    //info!(logger, "Request recvd : {:?}", req);
+    info!(logger, "Request recvd : {:?}", req);
 
-    println!("Url: {:?}", req.url.path());
+    info!(logger, "Url: {:?}", req.url.path());
     if let Some(params) = req.extensions.get::<Router>() {
-        println!("Params {:?}", params["name"]);
+        info!(logger, "Params {:?}", params["name"]);
 
         if let Some(name_param) = params.find("name") {
-            println!("Found param name : {}", name_param);
+            info!(logger, "Found param name : {}", name_param);
             resp = Response::with((status::Ok, "text data"));
             resp.headers = Headers::new();
             resp.headers.set(ContentType(
@@ -93,8 +93,9 @@ pub fn get_db_time(req: &mut Request) -> IronResult<Response> {
         pub Timestamp: i64,
     }
 
+    let logger: slog::Logger = get_logger!(req);
 
-    println!("in get_db_time");
+    info!(logger, "in get_db_time");
     let mut resp = Response::with((status::NotFound));
 
     match req.get::<Write<dal::DalPostgresPool>>() {
@@ -111,7 +112,8 @@ pub fn get_db_time(req: &mut Request) -> IronResult<Response> {
                                     let _timestamp: Timespec = row.get("timestamp");
                                     let utc_tm: Tm = at_utc(_timestamp);
                                     let local_tm: Tm = utc_tm.to_local();
-                                    println!(
+                                    info!(
+                                        logger,
                                         "row [{}, {}, utc {}, local {}] ",
                                         _id,
                                         _name,
@@ -138,22 +140,22 @@ pub fn get_db_time(req: &mut Request) -> IronResult<Response> {
                                     break; // we only need first element
                                 }
                             } else {
-                                println!("unable to execute query");
+                                info!(logger, "unable to execute query");
                             }
                         } else {
-                            println!("unable to prepare statement");
+                            info!(logger, "unable to prepare statement");
                         }
                     } else {
-                        println!("unable to get connection from pool");
+                        info!(logger, "unable to get connection from pool");
                     }
                 }
                 Err(e) => {
-                    println!("Error {:?}", e);
+                    info!(logger, "Error {:?}", e);
                 }
             }
         }
         Err(e) => {
-            println!(" Error {:?}", e);
+            info!(logger, " Error {:?}", e);
         }
     }
 
@@ -163,24 +165,24 @@ pub fn get_db_time(req: &mut Request) -> IronResult<Response> {
 
 
 pub fn authenticate(req: &mut Request) -> IronResult<Response> {
+    let logger: slog::Logger = get_logger!(req);
 
-
-    println!("in authenticate");
+    info!(logger, "in authenticate");
 
 
     let mut resp = Response::with((status::NotFound));
 
     //let ref rhead = req.headers;
-    //println!("rhead {}", rhead);
+    //info!(logger, "rhead {}", rhead);
     //let ref rbody = req.body;
-    //println!("rbody {}", rbody);
+    //info!(logger, "rbody {}", rbody);
 
     let mut resp_content_type = ContentType(Mime(TopLevel::Application, SubLevel::Json, vec![]));
 
     if req.headers.has::<ContentType>() {
         if let Some(ctype) = req.headers.get_raw("content-type") {
             if let Ok(strx) = str::from_utf8(&ctype[0]) {
-                println!("content type received is {}", strx);
+                info!(logger, "content type received is {}", strx);
                 if strx == "application/json" {
                     resp_content_type = ContentType(Mime(TopLevel::Application, SubLevel::Json, vec![]));
                 } else if strx == "application/cbor" {
@@ -211,7 +213,7 @@ pub fn authenticate(req: &mut Request) -> IronResult<Response> {
     }
 
     let rbody = req.get::<bodyparser::Json>();
-    println!("rbody {:?}", rbody);
+    info!(logger, "rbody {:?}", rbody);
 
     #[derive(Serialize, Deserialize, Clone, Debug)]
     struct AuthUser {
@@ -221,10 +223,10 @@ pub fn authenticate(req: &mut Request) -> IronResult<Response> {
 
     if let Ok(Some(authuser)) = req.get::<bodyparser::Struct<AuthUser>>() {
 
-        println!("authuser = {:?}", authuser);
+        info!(logger, "authuser = {:?}", authuser);
         //let query = format!("select * from user where userid={}", authuser.username);
         let query = "select * from customer_local_auth where local_id=$1";
-        println!("query [{}]", query);
+        info!(logger, "query [{}]", query);
 
         match req.get::<Write<dal::DalPostgresPool>>() {
             Ok(arcpool) => {
@@ -236,7 +238,7 @@ pub fn authenticate(req: &mut Request) -> IronResult<Response> {
                                 Ok(stmt) => {
                                     if let Ok(rows) = stmt.query(&[&"admin".to_string()]) {
                                         if rows.is_empty() {
-                                            println!("empty rows");
+                                            info!(logger, "empty rows");
                                         } else {
 
                                             for row in rows.iter() {
@@ -251,9 +253,9 @@ pub fn authenticate(req: &mut Request) -> IronResult<Response> {
                                                     customer_id_uuid: row.get("customer_id_uuid"),
                                                     password_hash: row.get("password_hash"),
                                                 };
-                                                println!("c [{:?}]", c);
+                                                info!(logger, "c [{:?}]", c);
                                                 if let Ok(res) = bcrypt::verify(&authuser.password, &c.password_hash) {
-                                                    println!("res [{:?}]", res);
+                                                    info!(logger, "res [{:?}]", res);
                                                     if res == true {
                                                         resp = Response::with((status::Ok));
                                                     }
@@ -263,30 +265,30 @@ pub fn authenticate(req: &mut Request) -> IronResult<Response> {
                                             }
                                         }
                                     } else {
-                                        println!("unable to execute query");
+                                        info!(logger, "unable to execute query");
                                     }
                                 }
                                 Err(e) => {
-                                    println!("unable to prepare statement e {:?}", e);
+                                    info!(logger, "unable to prepare statement e {:?}", e);
                                 }
                             }
                         } else {
-                            println!("unable to get connection from pool");
+                            info!(logger, "unable to get connection from pool");
                         }
                     }
                     Err(e) => {
-                        println!("Error {:?}", e);
+                        info!(logger, "Error {:?}", e);
                     }
                 }
             }
             Err(e) => {
-                println!(" Error {:?}", e);
+                info!(logger, " Error {:?}", e);
             }
         }
     }
 
     //let ref rbody = req.body;
-    //println!("line #{}", rbody);
+    //info!(logger, "line #{}", rbody);
 
     resp.headers.set(resp_content_type);
 
@@ -297,8 +299,9 @@ pub fn authenticate(req: &mut Request) -> IronResult<Response> {
 
 pub fn backoffice_authenticate(req: &mut Request) -> IronResult<Response> {
 
+    let logger: slog::Logger = get_logger!(req);
 
-    println!("in backoffice_authenticate");
+    info!(logger, "in backoffice_authenticate");
 
     #[derive(Serialize, Deserialize, Debug)]
     struct PrivateClaims {
@@ -324,16 +327,16 @@ pub fn backoffice_authenticate(req: &mut Request) -> IronResult<Response> {
     let mut resp = Response::with((status::NotFound));
 
     //let ref rhead = req.headers;
-    //println!("rhead {}", rhead);
+    //info!(logger, "rhead {}", rhead);
     //let ref rbody = req.body;
-    //println!("rbody {}", rbody);
+    //info!(logger, "rbody {}", rbody);
 
     let mut resp_content_type = ContentType(Mime(TopLevel::Application, SubLevel::Json, vec![]));
 
     if req.headers.has::<ContentType>() {
         if let Some(ctype) = req.headers.get_raw("content-type") {
             if let Ok(strx) = str::from_utf8(&ctype[0]) {
-                println!("content type received is {}", strx);
+                info!(logger, "content type received is {}", strx);
                 if strx == "application/json" {
                     resp_content_type = ContentType(Mime(TopLevel::Application, SubLevel::Json, vec![]));
                 } else if strx == "application/cbor" {
@@ -368,7 +371,7 @@ pub fn backoffice_authenticate(req: &mut Request) -> IronResult<Response> {
 
 
     let rbody = req.get::<bodyparser::Json>();
-    println!("rbody {:?}", rbody);
+    info!(logger, "rbody {:?}", rbody);
 
     #[derive(Serialize, Deserialize, Clone, Debug)]
     struct AuthUser {
@@ -401,7 +404,7 @@ pub fn backoffice_authenticate(req: &mut Request) -> IronResult<Response> {
     }
 
 
-    println!("authuser = {:?}", authuser);
+    info!(logger, "authuser = {:?}", authuser);
     //let query = format!("select * from user where userid={}", authuser.username);
     let mut query: String = "SELECT ".to_string();
     query += "u.id as user_id, u.name as user_name, p.password as user_password, r.id as role_id, r.name as role_name";
@@ -410,7 +413,7 @@ pub fn backoffice_authenticate(req: &mut Request) -> IronResult<Response> {
     query += " AND r.id = u.role_id";
     query += " AND u.name=$1";
     query += " order by p.date";
-    println!("query [{}]", query);
+    info!(logger, "query [{}]", query);
 
     let cfgmisc;
 
@@ -432,7 +435,7 @@ pub fn backoffice_authenticate(req: &mut Request) -> IronResult<Response> {
     arcpool = match req.get::<Write<dal::DalPostgresPool>>() {
         Ok(x) => x,
         Err(e) => {
-            println!("{:?}", e);
+            info!(logger, "{:?}", e);
             return Ok(resp);
         }
     };
@@ -440,7 +443,7 @@ pub fn backoffice_authenticate(req: &mut Request) -> IronResult<Response> {
     locked_pool = match arcpool.lock() {
         Ok(x) => x,
         Err(e) => {
-            println!("{:?}", e);
+            info!(logger, "{:?}", e);
             return Ok(resp);
         }
     };
@@ -451,7 +454,7 @@ pub fn backoffice_authenticate(req: &mut Request) -> IronResult<Response> {
     conn = match pool.rw_pool.get() {
         Ok(x) => x,
         Err(e) => {
-            println!("{:?}", e);
+            info!(logger, "{:?}", e);
             return Ok(resp);
         }
     };
@@ -460,7 +463,7 @@ pub fn backoffice_authenticate(req: &mut Request) -> IronResult<Response> {
     let stmt = match conn.prepare(&query) {
         Ok(x) => x,
         Err(e) => {
-            println!("{:?}", e);
+            info!(logger, "{:?}", e);
             return Ok(resp);
         }
     };
@@ -469,14 +472,14 @@ pub fn backoffice_authenticate(req: &mut Request) -> IronResult<Response> {
     let rows = match stmt.query(&[&authuser.username]) {
         Ok(x) => x,
         Err(e) => {
-            println!("{:?}", e);
+            info!(logger, "{:?}", e);
             return Ok(resp);
         }
     };
 
 
     if rows.is_empty() {
-        println!("empty rows");
+        info!(logger, "empty rows");
         return Ok(resp);
     }
 
@@ -498,7 +501,7 @@ pub fn backoffice_authenticate(req: &mut Request) -> IronResult<Response> {
             role_id: row.get("role_id"),
             role_name: row.get("role_name"),
         };
-        println!("c [{:?}]", c);
+        info!(logger, "c [{:?}]", c);
 
 
 
@@ -508,7 +511,7 @@ pub fn backoffice_authenticate(req: &mut Request) -> IronResult<Response> {
                 return Ok(resp);
             }
         };
-        println!("res [{:?}]", res);
+        info!(logger, "res [{:?}]", res);
 
         if true != res {
             break;
@@ -522,7 +525,7 @@ pub fn backoffice_authenticate(req: &mut Request) -> IronResult<Response> {
 
             jwt_issuer += "://";
             if let Some(x) = _url.host_str() {
-                println!("url host_str [{}]", x);
+                info!(logger, "url host_str [{}]", x);
                 jwt_issuer += x;
             }
         }
@@ -534,7 +537,7 @@ pub fn backoffice_authenticate(req: &mut Request) -> IronResult<Response> {
         /*
         let jissuetime = Utc.timestamp(jwt_issue_timestamp, 0);
         let jexptime = Utc.timestamp(jwt_exp_timestamp, 0);
-        println!("jwt_iss_time {},  jwet_exp_time {}", jissuetime, jexptime);
+        info!(logger, "jwt_iss_time {},  jwet_exp_time {}", jissuetime, jexptime);
         */
 
         //let remote_addr = .clone();
@@ -546,7 +549,7 @@ pub fn backoffice_authenticate(req: &mut Request) -> IronResult<Response> {
         jwt_aud.push(req.remote_addr.to_string());
 
 
-        println!("jwt_aud {:?}", jwt_aud);
+        info!(logger, "jwt_aud {:?}", jwt_aud);
 
 
         let private_claims = PrivateClaims {
