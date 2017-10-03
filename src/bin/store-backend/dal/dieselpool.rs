@@ -27,7 +27,7 @@ impl DalDieselPool {
             Err(e) => {
                 error!(
                     logger,
-                    "Unable to create Postgres connection pool. error message {}",
+                    "Unable to create Postgres connection pool. error message [{}]",
                     e
                 );
                 std::process::exit(1);

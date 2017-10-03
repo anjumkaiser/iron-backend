@@ -101,14 +101,18 @@ pub fn get_db_time(req: &mut Request) -> IronResult<Response> {
     let arcpool = match req.get::<Write<dal::DalPostgresPool>>() {
         Ok(x) => x,
         Err(e) => {
-            info!(logger, " Error {:?}", e);
+            error!(logger, "Unable to get connection pool, error message [{}]", e);
             return Ok(resp);
         }
     };
     let lockedpool = match arcpool.lock() {
         Ok(x) => x,
         Err(e) => {
-            info!(logger, "Error {:?}", e);
+            error!(
+                logger,
+                "Unable to get lock on connection pool, error message [{}]",
+                e
+            );
             return Ok(resp);
         }
     };
@@ -118,7 +122,7 @@ pub fn get_db_time(req: &mut Request) -> IronResult<Response> {
     let conn = match pool.rw_pool.get() {
         Ok(x) => x,
         Err(e) => {
-            info!(logger, "iable to deref connection pool");
+            error!(logger, "Unable to get connection from pool");
             return Ok(resp);
         }
     };
@@ -126,7 +130,7 @@ pub fn get_db_time(req: &mut Request) -> IronResult<Response> {
     let stmt = match conn.prepare("SELECT 1 as id, 'someone' as name, now() as timestamp") {
         Ok(x) => x,
         Err(e) => {
-            info!(logger, "unable to prepare statement");
+            error!(logger, "Unable to prepare statement");
             return Ok(resp);
         }
     };
@@ -135,7 +139,7 @@ pub fn get_db_time(req: &mut Request) -> IronResult<Response> {
     let rows = match stmt.query(&[]) {
         Ok(x) => x,
         Err(e) => {
-            info!(logger, "unable to execute query");
+            error!(logger, "Unable to execute query, error message [{}]", e);
             return Ok(resp);
         }
     };
@@ -238,7 +242,7 @@ pub fn authenticate(req: &mut Request) -> IronResult<Response> {
     let authuser = match req.get::<bodyparser::Struct<AuthUser>>() {
         Ok(Some(x)) => x,
         _ => {
-            error!(logger, "unable to get authuser from Request");
+            error!(logger, "Unable to get authuser from request");
             return Ok(resp);
         }
     };
@@ -251,7 +255,7 @@ pub fn authenticate(req: &mut Request) -> IronResult<Response> {
     let arcpool = match req.get::<Write<dal::DalPostgresPool>>() {
         Ok(x) => x,
         Err(e) => {
-            info!(logger, " Error {:?}", e);
+            error!(logger, "Unable to get connection pool, error message [{}]", e);
             return Ok(resp);
         }
     };
@@ -259,7 +263,11 @@ pub fn authenticate(req: &mut Request) -> IronResult<Response> {
     let locked_pool = match arcpool.lock() {
         Ok(x) => x,
         Err(e) => {
-            info!(logger, "Error {:?}", e);
+            error!(
+                logger,
+                "Unable to get lock on connection pool, error message [{}]",
+                e
+            );
             return Ok(resp);
         }
     };
@@ -269,7 +277,11 @@ pub fn authenticate(req: &mut Request) -> IronResult<Response> {
     let conn = match pool.rw_pool.get() {
         Ok(x) => x,
         Err(e) => {
-            info!(logger, "unable to get connection from pool");
+            error!(
+                logger,
+                "Unable to get connection from pool, error message [{}]",
+                e
+            );
             return Ok(resp);
         }
     };
@@ -277,7 +289,7 @@ pub fn authenticate(req: &mut Request) -> IronResult<Response> {
     let stmt = match conn.prepare(&query) {
         Ok(x) => x,
         Err(e) => {
-            info!(logger, "unable to prepare statement e {:?}", e);
+            error!(logger, "Unable to prepare statement, error message [{}]", e);
             return Ok(resp);
         }
     };
@@ -285,14 +297,14 @@ pub fn authenticate(req: &mut Request) -> IronResult<Response> {
     let rows = match stmt.query(&[&"admin".to_string()]) {
         Ok(x) => x,
         Err(e) => {
-            info!(logger, "unable to execute query");
+            error!(logger, "Unable to execute query, error message [{}]", e);
             return Ok(resp);
         }
     };
 
 
     if rows.is_empty() {
-        info!(logger, "empty rows");
+        info!(logger, "No data was found matching requested critera");
     } else {
         for row in rows.iter() {
 
@@ -467,6 +479,7 @@ pub fn backoffice_authenticate(req: &mut Request) -> IronResult<Response> {
         Ok(x) => x,
         Err(e) => {
             info!(logger, "{:?}", e);
+            error!(logger, "Unable to get connection pool, error message [{}]", e);
             return Ok(resp);
         }
     };
@@ -474,18 +487,25 @@ pub fn backoffice_authenticate(req: &mut Request) -> IronResult<Response> {
     locked_pool = match arcpool.lock() {
         Ok(x) => x,
         Err(e) => {
-            info!(logger, "{:?}", e);
+            error!(
+                logger,
+                "Unable to get lock on connection pool, error message [{}]",
+                e
+            );
             return Ok(resp);
         }
     };
 
 
     pool = locked_pool.deref();
-
     conn = match pool.rw_pool.get() {
         Ok(x) => x,
         Err(e) => {
-            info!(logger, "{:?}", e);
+            error!(
+                logger,
+                "Unable to get connection from pool, error message [{}]",
+                e
+            );
             return Ok(resp);
         }
     };
@@ -494,7 +514,11 @@ pub fn backoffice_authenticate(req: &mut Request) -> IronResult<Response> {
     let stmt = match conn.prepare(&query) {
         Ok(x) => x,
         Err(e) => {
-            info!(logger, "{:?}", e);
+            error!(
+                logger,
+                "Unable to get prepare statement, error message [{}]",
+                e
+            );
             return Ok(resp);
         }
     };
@@ -503,14 +527,14 @@ pub fn backoffice_authenticate(req: &mut Request) -> IronResult<Response> {
     let rows = match stmt.query(&[&authuser.username]) {
         Ok(x) => x,
         Err(e) => {
-            info!(logger, "{:?}", e);
+            error!(logger, "Unable to execute query, error message [{}]", e);
             return Ok(resp);
         }
     };
 
 
     if rows.is_empty() {
-        info!(logger, "empty rows");
+        info!(logger, "No data was found matching requested critera");
         return Ok(resp);
     }
 
@@ -532,17 +556,17 @@ pub fn backoffice_authenticate(req: &mut Request) -> IronResult<Response> {
             role_id: row.get("role_id"),
             role_name: row.get("role_name"),
         };
-        info!(logger, "c [{:?}]", c);
+        //info!(logger, "c [{:?}]", c);
 
 
 
         let res = match bcrypt::verify(&authuser.password, &c.password_hash) {
             Ok(x) => x,
-            Err(e) => {
+            Err(_) => {
                 return Ok(resp);
             }
         };
-        info!(logger, "res [{:?}]", res);
+        //info!(logger, "res [{:?}]", res);
 
         if true != res {
             break;
@@ -556,7 +580,7 @@ pub fn backoffice_authenticate(req: &mut Request) -> IronResult<Response> {
 
             jwt_issuer += "://";
             if let Some(x) = _url.host_str() {
-                info!(logger, "url host_str [{}]", x);
+                //info!(logger, "url host_str [{}]", x);
                 jwt_issuer += x;
             }
         }

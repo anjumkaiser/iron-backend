@@ -36,7 +36,7 @@ impl DalPostgresPool {
             Err(e) => {
                 error!(
                     logger,
-                    "Unable to create Postgres connection manager, error message {}",
+                    "Unable to create Postgres connection manager, error message [{}]",
                     e
                 );
                 std::process::exit(1);
@@ -47,7 +47,7 @@ impl DalPostgresPool {
             Err(e) => {
                 error!(
                     logger,
-                    "Unable to create Postgres connection pool. error message {}",
+                    "Unable to create Postgres connection pool. error message [{}]",
                     e
                 );
                 std::process::exit(1);

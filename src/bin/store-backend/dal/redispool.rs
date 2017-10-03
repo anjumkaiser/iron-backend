@@ -27,7 +27,7 @@ impl DalRedisPool {
             Err(e) => {
                 error!(
                     logger,
-                    "Unable to create Redis connection manager. error message {}",
+                    "Unable to create Redis connection manager. error message [{}]",
                     e
                 );
                 std::process::exit(1);
@@ -38,7 +38,7 @@ impl DalRedisPool {
             Err(e) => {
                 error!(
                     logger,
-                    "Unable to create Redis connection pool. error message {}",
+                    "Unable to create Redis connection pool. error message [{}]",
                     e
                 );
                 std::process::exit(1);
