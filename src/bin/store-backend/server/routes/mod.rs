@@ -126,7 +126,11 @@ pub fn get_db_time(req: &mut Request) -> IronResult<Response> {
     let conn = match pool.rw_pool.get() {
         Ok(x) => x,
         Err(e) => {
-            error!(logger, "Unable to get connection from pool, erro message [{}]", e);
+            error!(
+                logger,
+                "Unable to get connection from pool, erro message [{}]",
+                e
+            );
             return Ok(resp);
         }
     };
