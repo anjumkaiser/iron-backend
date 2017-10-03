@@ -101,7 +101,11 @@ pub fn get_db_time(req: &mut Request) -> IronResult<Response> {
     let arcpool = match req.get::<Write<dal::DalPostgresPool>>() {
         Ok(x) => x,
         Err(e) => {
-            error!(logger, "Unable to get connection pool, error message [{}]", e);
+            error!(
+                logger,
+                "Unable to get connection pool, error message [{}]",
+                e
+            );
             return Ok(resp);
         }
     };
@@ -163,20 +167,20 @@ pub fn get_db_time(req: &mut Request) -> IronResult<Response> {
 
         // chrono crate
         let _datetime_utc: DateTime<Utc> = row.get("timestamp");
-                                    let _datetime_local: DateTime<Local> = row.get("timestamp");
-                                    info!(logger, 
-                                        "row [{}, {}, utc {}, local {}] ",
-                                        _id,
-                                        _name,
-                                        _datetime_utc.to_rfc2822(),
-                                        _datetime_local.to_rfc2822(),
-                                    );
+        let _datetime_local: DateTime<Local> = row.get("timestamp");
+        info!(logger,
+            "row [{}, {}, utc {}, local {}] ",
+            _id,
+            _name,
+            _datetime_utc.to_rfc2822(),
+            _datetime_local.to_rfc2822(),
+        );
 
         let data: DbData = DbData {
             Id: _id,
             Name: _name,
             //Timestamp: _timestamp.sec,    // time crate
-            Timestamp: _datetime_utc.timestamp(),   // chrono crate
+            Timestamp: _datetime_utc.timestamp(), // chrono crate
         };
 
         if let Ok(json_resp) = serde_json::to_string(&data) {
@@ -269,7 +273,11 @@ pub fn authenticate(req: &mut Request) -> IronResult<Response> {
     let arcpool = match req.get::<Write<dal::DalPostgresPool>>() {
         Ok(x) => x,
         Err(e) => {
-            error!(logger, "Unable to get connection pool, error message [{}]", e);
+            error!(
+                logger,
+                "Unable to get connection pool, error message [{}]",
+                e
+            );
             return Ok(resp);
         }
     };
@@ -493,7 +501,11 @@ pub fn backoffice_authenticate(req: &mut Request) -> IronResult<Response> {
         Ok(x) => x,
         Err(e) => {
             info!(logger, "{:?}", e);
-            error!(logger, "Unable to get connection pool, error message [{}]", e);
+            error!(
+                logger,
+                "Unable to get connection pool, error message [{}]",
+                e
+            );
             return Ok(resp);
         }
     };

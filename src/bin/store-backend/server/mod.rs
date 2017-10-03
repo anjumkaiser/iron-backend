@@ -30,12 +30,7 @@ fn configure_router() -> Router {
 
 
 
-pub fn serve(
-    logger: slog::Logger,
-    c: config::Config,
-    pg_dal: dal::DalPostgresPool,
-    config_misc: configmisc::ConfigMisc,
-) {
+pub fn serve(logger: slog::Logger, c: config::Config, pg_dal: dal::DalPostgresPool, config_misc: configmisc::ConfigMisc) {
 
     let router = configure_router();
 
@@ -46,8 +41,7 @@ pub fn serve(
         logger_formatter,
     );
 
-    let logger_enclave: loggerenclave::LoggerEnclave =
-        loggerenclave::LoggerEnclave { logger: logger.new(o!("child" => "rotues")) };
+    let logger_enclave: loggerenclave::LoggerEnclave = loggerenclave::LoggerEnclave { logger: logger.new(o!("child" => "rotues")) };
 
     let mut middleware = Chain::new(logger_middleware);
     middleware.link_before(Read::<loggerenclave::LoggerEnclave>::one(logger_enclave));
@@ -63,10 +57,7 @@ pub fn serve(
 
     if c.server.secure {
         use hyper_native_tls;
-        match hyper_native_tls::NativeTlsServer::new(
-            c.server.certificate_file,
-            &c.server.certificate_password,
-        ) {
+        match hyper_native_tls::NativeTlsServer::new(c.server.certificate_file, &c.server.certificate_password) {
             Ok(tls) => {
                 match iron.https(&*ipaddr, tls) {
                     Ok(listening) => {
