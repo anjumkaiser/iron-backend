@@ -9,7 +9,7 @@ use hyper::mime::*;
 use dal;
 use std::ops::Deref;
 use r2d2_postgres;
-use time::{Timespec, Tm, at_utc};
+//use time::{Timespec, Tm, at_utc};
 use chrono::prelude::*;
 use serde_json;
 use std;
@@ -147,6 +147,7 @@ pub fn get_db_time(req: &mut Request) -> IronResult<Response> {
     for row in rows.iter() {
         let _id: i32 = row.get("id");
         let _name: String = row.get("name");
+        /*// time crate
         let _timestamp: Timespec = row.get("timestamp");
         let utc_tm: Tm = at_utc(_timestamp);
         let local_tm: Tm = utc_tm.to_local();
@@ -158,11 +159,24 @@ pub fn get_db_time(req: &mut Request) -> IronResult<Response> {
             utc_tm.asctime(),
             local_tm.asctime()
         );
+        */
+
+        // chrono crate
+        let _datetime_utc: DateTime<Utc> = row.get("timestamp");
+                                    let _datetime_local: DateTime<Local> = row.get("timestamp");
+                                    info!(logger, 
+                                        "row [{}, {}, utc {}, local {}] ",
+                                        _id,
+                                        _name,
+                                        _datetime_utc.to_rfc2822(),
+                                        _datetime_local.to_rfc2822(),
+                                    );
 
         let data: DbData = DbData {
             Id: _id,
             Name: _name,
-            Timestamp: _timestamp.sec,
+            //Timestamp: _timestamp.sec,    // time crate
+            Timestamp: _datetime_utc.timestamp(),   // chrono crate
         };
 
         if let Ok(json_resp) = serde_json::to_string(&data) {

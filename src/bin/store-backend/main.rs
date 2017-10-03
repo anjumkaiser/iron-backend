@@ -30,7 +30,7 @@ extern crate dotenv;
 extern crate jsonwebtoken;
 extern crate url;
 
-extern crate time;
+//extern crate time;
 extern crate chrono;
 
 #[macro_use]
