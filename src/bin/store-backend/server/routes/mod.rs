@@ -8,11 +8,11 @@ use hyper::header::*;
 use hyper::mime::*;
 use dal;
 use std::ops::Deref;
-use r2d2_postgres;
+//use r2d2_postgres;
 //use time::{Timespec, Tm, at_utc};
 use chrono::prelude::*;
 use serde_json;
-use std;
+//use std;
 use std::str;
 
 use uuid;
@@ -88,9 +88,9 @@ pub fn get_db_time(req: &mut Request) -> IronResult<Response> {
 
     #[derive(Serialize, Deserialize, Debug)]
     pub struct DbData {
-        pub Id: i32,
-        pub Name: String,
-        pub Timestamp: i64,
+        pub id: i32,
+        pub name: String,
+        pub timestamp: i64,
     }
 
     let logger: slog::Logger = get_logger!(req);
@@ -126,7 +126,7 @@ pub fn get_db_time(req: &mut Request) -> IronResult<Response> {
     let conn = match pool.rw_pool.get() {
         Ok(x) => x,
         Err(e) => {
-            error!(logger, "Unable to get connection from pool");
+            error!(logger, "Unable to get connection from pool, erro message [{}]", e);
             return Ok(resp);
         }
     };
@@ -134,7 +134,7 @@ pub fn get_db_time(req: &mut Request) -> IronResult<Response> {
     let stmt = match conn.prepare("SELECT 1 as id, 'someone' as name, now() as timestamp") {
         Ok(x) => x,
         Err(e) => {
-            error!(logger, "Unable to prepare statement");
+            error!(logger, "Unable to prepare statement, error message [{}]", e);
             return Ok(resp);
         }
     };
@@ -177,10 +177,10 @@ pub fn get_db_time(req: &mut Request) -> IronResult<Response> {
         );
 
         let data: DbData = DbData {
-            Id: _id,
-            Name: _name,
-            //Timestamp: _timestamp.sec,    // time crate
-            Timestamp: _datetime_utc.timestamp(), // chrono crate
+            id: _id,
+            name: _name,
+            //timestamp: _timestamp.sec,    // time crate
+            timestamp: _datetime_utc.timestamp(), // chrono crate
         };
 
         if let Ok(json_resp) = serde_json::to_string(&data) {
