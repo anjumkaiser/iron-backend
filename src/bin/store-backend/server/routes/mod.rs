@@ -444,29 +444,13 @@ pub fn backoffice_authenticate(req: &mut Request) -> IronResult<Response> {
         pub password: String,
     };
 
-    /*
     let authuser = match req.get::<bodyparser::Struct<AuthUser>>() {
-        Ok(x) => {
-            match x {
-                Some(y) => y,
-                None => {
-                    return Ok(resp);
-                }
-            }
-        }
-        Err(e) => {
+        Ok(Some(x)) => x,
+        _ => {
+            info!(logger, "Unable to get AuthUser data from request");
             return Ok(resp);
         }
     };
-    */
-
-    let authuser;
-
-    if let Ok(Some(x)) = req.get::<bodyparser::Struct<AuthUser>>() {
-        authuser = x;
-    } else {
-        return Ok(resp);
-    }
 
 
     info!(logger, "authuser = {:?}", authuser);
@@ -491,13 +475,7 @@ pub fn backoffice_authenticate(req: &mut Request) -> IronResult<Response> {
         }
     }
 
-
-    let arcpool;
-    let locked_pool;
-    let pool;
-    let conn;
-
-    arcpool = match req.get::<Write<dal::DalPostgresPool>>() {
+    let arcpool = match req.get::<Write<dal::DalPostgresPool>>() {
         Ok(x) => x,
         Err(e) => {
             info!(logger, "{:?}", e);
@@ -510,7 +488,7 @@ pub fn backoffice_authenticate(req: &mut Request) -> IronResult<Response> {
         }
     };
 
-    locked_pool = match arcpool.lock() {
+    let locked_pool = match arcpool.lock() {
         Ok(x) => x,
         Err(e) => {
             error!(
@@ -523,8 +501,8 @@ pub fn backoffice_authenticate(req: &mut Request) -> IronResult<Response> {
     };
 
 
-    pool = locked_pool.deref();
-    conn = match pool.rw_pool.get() {
+    let pool = locked_pool.deref();
+    let conn = match pool.rw_pool.get() {
         Ok(x) => x,
         Err(e) => {
             error!(
@@ -628,9 +606,7 @@ pub fn backoffice_authenticate(req: &mut Request) -> IronResult<Response> {
         jwt_aud.push(c.user_id.to_string());
         jwt_aud.push(c.user_name.clone());
         jwt_aud.push(req.remote_addr.to_string());
-
-
-        info!(logger, "jwt_aud {:?}", jwt_aud);
+        //info!(logger, "jwt_aud {:?}", jwt_aud);
 
 
         let private_claims = PrivateClaims {
