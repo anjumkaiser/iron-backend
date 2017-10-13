@@ -93,6 +93,7 @@ fn main() {
         //jwt_secret: "secretsecret1234567890".to_string()
         //jwt_secret: uuid::Uuid::new_v4().simple().to_string()
         jwt_secret: uuid::Uuid::new_v4().to_string(),
+        jwt_time_variation: 60, // 60 seconds time relaxation for jwt validation
     };
 
     server::serve(
