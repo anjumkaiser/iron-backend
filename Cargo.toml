@@ -53,6 +53,7 @@ serde_json = "1.0.2"
 serde_urlencoded = "0.5.1"
 serde_xml = "0.9.1"
 serde_yaml = "0.7.1"
+set = "0.1.1"
 slog = "2.0.9"
 slog-json = "2.0.2"
 std-logger = "0.2.0"
@@ -78,7 +79,7 @@ version = "0.16.0"
 [dependencies.postgres]
 features = [
     "with-uuid",
-    "with-chrono"
+    "with-chrono",
 ]
 version = "0.15.1"
 

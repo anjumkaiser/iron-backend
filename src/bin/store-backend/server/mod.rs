@@ -21,7 +21,7 @@ fn configure_router() -> Router {
     router.post("/authenticate", routes::authenticate, "authenticate");
     router.post(
         "/backoffice/authenticate",
-        routes::backoffice_authenticate,
+        routes::authenticate::backoffice_authenticate,
         "backoffice::authenticate",
     );
 
