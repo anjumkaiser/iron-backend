@@ -1,7 +1,6 @@
 use iron::prelude::*;
 use iron::status;
 use bodyparser;
-
 use persistent::{Read, Write};
 use hyper::header::*;
 use hyper::mime::*;
@@ -12,44 +11,42 @@ use std::ops::Deref;
 use chrono::prelude::*;
 use serde_json;
 use std::str;
-
 use uuid;
 use bcrypt;
-
-use jsonwebtoken::{encode, Header};
+use jsonwebtoken;
+use slog;
 
 use server::loggerenclave::LoggerEnclave;
 use server::routes::ResponseData;
-use slog;
-
 use configmisc;
+
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct PrivateClaims {
+    user_id: uuid::Uuid,
+    user_name: String,
+    role_id: uuid::Uuid,
+    role_name: String,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+struct Claims {
+    sub: String, // subject
+    iss: String, // issuer
+    aud: Vec<String>, // audience
+    exp: i64, // expiration time
+    nbf: i64, // use not before
+    iat: i64, // issued at time
+    jti: String, // jwt id - case sensitive and unique among servers
+    pvt: PrivateClaims,
+}
+
 
 pub fn backoffice_authenticate(req: &mut Request) -> IronResult<Response> {
 
     let logger: slog::Logger = get_logger!(req);
 
     info!(logger, "in backoffice_authenticate");
-
-    #[derive(Serialize, Deserialize, Debug)]
-    struct PrivateClaims {
-        user_id: uuid::Uuid,
-        user_name: String,
-        role_id: uuid::Uuid,
-        role_name: String,
-    };
-
-    #[derive(Serialize, Deserialize, Debug)]
-    struct Claims {
-        sub: String, // subject
-        iss: String, // issuer
-        aud: Vec<String>, // audience
-        exp: i64, // expiration time
-        nbf: i64, // use not before
-        iat: i64, // issued at time
-        jti: String, // jwt id - case sensitive and unique among servers
-        pvt: PrivateClaims,
-    };
-
 
     let mut resp = Response::with((status::NotFound));
 
@@ -291,8 +288,8 @@ pub fn backoffice_authenticate(req: &mut Request) -> IronResult<Response> {
 
         let jwt_token: String;
 
-        if let Ok(jtoken) = encode(
-            &Header::default(),
+        if let Ok(jtoken) = jsonwebtoken::encode(
+            &jsonwebtoken::Header::default(),
             &my_claims,
             &cfgmisc.jwt_secret.clone().into_bytes(),
         )
@@ -317,4 +314,18 @@ pub fn backoffice_authenticate(req: &mut Request) -> IronResult<Response> {
 
     resp.headers.set(resp_headers);
     Ok(resp)
+}
+
+
+
+pub fn validate_auth_token(token: String, cfgmisc: configmisc::ConfigMisc) -> Option<PrivateClaims> {
+
+    let mut validation: jsonwebtoken::Validation = jsonwebtoken::Validation::default();
+    validation.leeway = cfgmisc.jwt_time_variation.clone();
+
+    match jsonwebtoken::decode::<Claims>(&token, cfgmisc.jwt_secret.clone().as_bytes(), &validation) {
+        Ok(x) => Some(x.claims.pvt),
+        Err(_) => None,
+    }
+
 }
