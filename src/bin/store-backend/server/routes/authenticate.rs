@@ -318,6 +318,90 @@ pub fn backoffice_authenticate(req: &mut Request) -> IronResult<Response> {
 
 
 
+pub fn backoffice_renew_token(req: &mut Request) -> IronResult<Response> {
+
+    let logger: slog::Logger = get_logger!(req);
+
+    info!(logger, "in backoffice_renew_token");
+
+    let mut resp = Response::with((status::InternalServerError));
+
+    let rbody = req.get::<bodyparser::Json>();
+    info!(logger, "rbody {:?}", rbody);
+
+    #[derive(Serialize, Deserialize, Clone, Debug)]
+    struct AuthToken {
+        pub user_id: String,
+        pub token: String,
+    };
+
+    let authtoken = match req.get::<bodyparser::Struct<AuthToken>>() {
+        Ok(Some(x)) => x,
+        _ => {
+            info!(logger, "Unable to get AuthUser data from request");
+            return Ok(resp);
+        }
+    };
+
+    let cfgmisc = match req.get::<Read<configmisc::ConfigMisc>>() {
+        Ok(dcfgmisc) => dcfgmisc.clone(),
+        Err(_) => {
+            return Ok(resp);
+        }
+    };
+
+
+    let mut validation: jsonwebtoken::Validation = jsonwebtoken::Validation::default();
+    validation.leeway = cfgmisc.jwt_time_variation.clone();
+
+    let mut claims: Claims = match jsonwebtoken::decode::<Claims>(&authtoken.token, cfgmisc.jwt_secret.clone().as_bytes(), &validation) {
+        Ok(x) => x.claims,
+        Err(_) => return Ok(resp),
+    };
+
+
+    if authtoken.user_id != claims.sub {
+        info!(logger, "unmatched user id from token");
+        resp = Response::with((status::Unauthorized));
+        return Ok(resp);
+    }
+
+
+    let current_time = Utc::now();
+    let jwt_issue_timestamp: i64 = current_time.timestamp();
+    let jwt_exp_timestamp = jwt_issue_timestamp + (3600 * 1);
+
+    claims.iat = jwt_issue_timestamp;
+    claims.exp = jwt_exp_timestamp;
+    claims.nbf = jwt_issue_timestamp;
+
+    let jwt_token: String;
+
+    if let Ok(jtoken) = jsonwebtoken::encode(
+        &jsonwebtoken::Header::default(),
+        &claims,
+        &cfgmisc.jwt_secret.clone().into_bytes(),
+    )
+    {
+        jwt_token = jtoken;
+    } else {
+        return Ok(resp);
+    }
+
+    let resp_data: ResponseData<String> = ResponseData {
+        success: true,
+        data: jwt_token,
+        message: "".to_owned(),
+    };
+
+    if let Ok(respjson) = serde_json::to_string(&resp_data) {
+        resp = Response::with((status::Ok, respjson));
+    }
+
+    Ok(resp)
+}
+
+
 pub fn validate_auth_token(token: String, cfgmisc: configmisc::ConfigMisc) -> Option<PrivateClaims> {
 
     let mut validation: jsonwebtoken::Validation = jsonwebtoken::Validation::default();

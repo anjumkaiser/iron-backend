@@ -25,6 +25,12 @@ fn configure_router() -> Router {
         "backoffice::authenticate",
     );
 
+    router.post(
+        "/backoffice/renew",
+        routes::authenticate::backoffice_renew_token,
+        "backoffice::renew_token",
+    );
+
     router
 }
 
