@@ -3,6 +3,8 @@ extern crate router;
 extern crate persistent;
 extern crate bodyparser;
 
+extern crate formdata;
+extern crate multipart;
 extern crate hyper;
 extern crate hyper_native_tls;
 extern crate params;

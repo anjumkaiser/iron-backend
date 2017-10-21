@@ -31,6 +31,8 @@ fn configure_router() -> Router {
         "backoffice::renew_token",
     );
 
+    router.post("/fileupload", routes::upload_file, "file-uploads");
+
     router
 }
 

@@ -354,3 +354,169 @@ pub fn authenticate(req: &mut Request) -> IronResult<Response> {
 
     Ok(resp)
 }
+
+
+use std;
+use multipart::server::{Multipart, Entries, SaveResult, SavedFile};
+
+
+pub fn upload_file(req: &mut Request) -> IronResult<Response> {
+    let mut resp = Response::with((status::BadRequest));
+
+    let logger: slog::Logger = get_logger!(req);
+
+
+
+    /*
+    // params, as it is iron related
+
+    let params = match req.get_ref::<params::Params>() {
+        Err(_) => {
+            return Ok(resp);
+        }
+        Ok(x) => x,
+    };
+
+    info!(logger, "parsed multipart/params data: {:?}", params);
+
+    match params.find(&["f01", "name"]) {
+        Some(&params::Value::String(ref name)) => {
+            info!(logger, "data from f01 : {:?}", name);
+
+            //let y = x as File;
+
+            //info!(logger, "f01 {:?}", );
+            //info!(logger, "f01 {}", x.size);
+        }
+        _ => {
+            return Ok(resp);
+        }
+
+    };
+    */
+
+
+    /*
+    let form_data = match formdata::read_formdata(&mut req.body, &req.headers) {
+        Ok(x) => x,
+        Err(e) => {
+            error!(
+                logger,
+                "unable to get files posted in request, error message {}",
+                e
+            );
+            return Ok(resp);
+        }
+    };
+
+    info!(logger, "read_data {:?}", form_data);
+
+    for file in form_data.files {
+        info!(logger, " file ::> {:?}", file);
+    }
+    */
+
+
+
+
+    /*
+    let mut form_data = match Multipart::from_request(req) {
+        Ok(x) => x,
+        Err(_) => {
+
+            info!(logger, "unable to get multipart");
+            return Ok(resp);
+        }
+    };
+
+    let fd = form_data.save().size_limit(1048576).with_dir(
+        std::path::PathBuf::from("/saved/"),
+    );
+
+    resp = match fd {
+        SaveResult::Full(entries) => {
+
+            info!(logger, "got full entries");
+
+            for (name, file) in entries.files {
+                info!(logger, "entry: name {:?} files {:?}", name, file);
+                let pth: std::path::PathBuf = file[0].path.clone();
+                let mut dpath: std::path::PathBuf = std::path::PathBuf::new();
+
+
+                if name == "f01" {
+                    dpath.push("/saved/");
+                    dpath.push(name + ".jpg");
+
+                } else {
+                    continue;
+                }
+                let _ = std::fs::rename(&pth, &dpath);
+
+                info!(
+                    logger,
+                    "file at path {} copied to {}",
+                    pth.to_string_lossy(),
+                    dpath.to_string_lossy()
+                );
+            }
+
+            Response::with((status::Ok))
+        }
+        SaveResult::Partial(_, reason) => {
+
+            error!(logger, "error fetching files, message {:?}", reason);
+            Response::with((status::BadRequest))
+
+        }
+        SaveResult::Error(_) => Response::with(status::BadRequest),
+    };
+
+    */
+
+
+    /*
+     */
+    let mut form_data = match Multipart::from_request(req) {
+        Ok(x) => x,
+        Err(_) => {
+
+            info!(logger, "unable to get multipart");
+            return Ok(resp);
+        }
+    };
+
+    let multipart_field = match form_data.read_entry() {
+        Ok(Some(x)) => x,
+        _ => {
+            return Ok(resp);
+        }
+    };
+
+    use multipart::server::MultipartData;
+    let fname = multipart_field.name;
+    if let MultipartData::File(mut mfile) = multipart_field.data {
+
+        let mut pdest = std::path::PathBuf::new();
+        if fname == "f01" {
+            pdest.push("/saved/");
+            pdest.push(fname + ".jpg");
+            mfile.save().with_path(&pdest);
+
+            info!(logger, "file saved to location {}", pdest.to_string_lossy());
+
+            resp.status = Some(status::Ok);
+        } else {
+            error!(logger, "unexpected file {}, discarding", fname);
+
+        }
+    }
+
+
+    //info!(logger, "read_data {}", form_data);
+
+    //resp.status = Some(status::Ok); // = Response::with((status::Ok));
+
+
+    Ok(resp)
+}
