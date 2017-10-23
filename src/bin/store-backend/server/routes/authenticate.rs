@@ -5,6 +5,8 @@ use persistent::{Read, Write};
 use hyper::header::*;
 use hyper::mime::*;
 use dal;
+use iron::url;
+use std;
 use std::ops::Deref;
 //use r2d2_postgres;
 //use time::{Timespec, Tm, at_utc};
@@ -15,6 +17,7 @@ use uuid;
 use bcrypt;
 use jsonwebtoken;
 use slog;
+use hyper;
 
 use server::loggerenclave::LoggerEnclave;
 use server::routes::ResponseData;
@@ -40,6 +43,106 @@ struct Claims {
     jti: String, // jwt id - case sensitive and unique among servers
     pvt: PrivateClaims,
 }
+
+
+#[derive(Debug, Serialize, Deserialize)]
+struct BackOfficeUserAuth {
+    pub user_id: uuid::Uuid,
+    pub user_name: String,
+    pub role_id: uuid::Uuid,
+    pub role_name: String,
+    pub password_hash: String,
+}
+
+#[inline]
+fn create_json_web_token(
+    xurl: url::Url,
+    remote_addr: String,
+    resp_headers: hyper::header::ContentType,
+    cfgmisc: std::sync::Arc<configmisc::ConfigMisc>,
+    c: BackOfficeUserAuth,
+) -> IronResult<Response> {
+
+    let mut resp = Response::with(status::InternalServerError);
+
+    let mut jwt_issuer = String::new();
+    {
+        let _url: url::Url = xurl;
+        jwt_issuer += _url.scheme();
+
+        jwt_issuer += "://";
+        if let Some(x) = _url.host_str() {
+            //info!(logger, "url host_str [{}]", x);
+            jwt_issuer += x;
+        }
+    }
+
+    let current_time = Utc::now();
+    let jwt_issue_timestamp: i64 = current_time.timestamp();
+    let jwt_exp_timestamp = jwt_issue_timestamp + (3600 * 1);
+
+    /*
+    let jissuetime = Utc.timestamp(jwt_issue_timestamp, 0);
+    let jexptime = Utc.timestamp(jwt_exp_timestamp, 0);
+    info!(logger, "jwt_iss_time {},  jwet_exp_time {}", jissuetime, jexptime);
+    */
+
+    //let remote_addr = .clone();
+
+    let mut jwt_aud = Vec::new();
+    jwt_aud.push(c.user_id.simple().to_string());
+    jwt_aud.push(c.user_id.to_string());
+    jwt_aud.push(c.user_name.clone());
+    jwt_aud.push(remote_addr);
+    //info!(logger, "jwt_aud {:?}", jwt_aud);
+
+
+    let private_claims = PrivateClaims {
+        user_id: c.user_id,
+        user_name: c.user_name,
+        role_id: c.role_id,
+        role_name: c.role_name,
+    };
+
+    let my_claims = Claims {
+        sub: c.user_id.simple().to_string(), // populating uuid as simple format (hypen-less format) string
+        iss: jwt_issuer,
+        aud: jwt_aud,
+        iat: jwt_issue_timestamp,
+        exp: jwt_exp_timestamp,
+        jti: uuid::Uuid::new_v4().simple().to_string(),
+        nbf: jwt_issue_timestamp,
+        pvt: private_claims,
+    };
+
+    let jwt_token: String;
+
+    if let Ok(jtoken) = jsonwebtoken::encode(
+        &jsonwebtoken::Header::default(),
+        &my_claims,
+        &cfgmisc.jwt_secret.clone().into_bytes(),
+    )
+    {
+        jwt_token = jtoken;
+    } else {
+        return Ok(resp);
+    }
+
+    let resp_data: ResponseData<String> = ResponseData {
+        success: true,
+        data: jwt_token,
+        message: "".to_owned(),
+    };
+
+    if let Ok(respjson) = serde_json::to_string(&resp_data) {
+        resp = Response::with((status::Ok, respjson));
+    }
+
+    resp.headers.set(resp_headers);
+
+    Ok(resp)
+}
+
 
 
 pub fn backoffice_authenticate(req: &mut Request) -> IronResult<Response> {
@@ -201,16 +304,10 @@ pub fn backoffice_authenticate(req: &mut Request) -> IronResult<Response> {
         return Ok(resp);
     }
 
+    let mut result: IronResult<Response> = Ok(resp);
+
     for row in rows.iter() {
 
-        #[derive(Debug, Serialize, Deserialize)]
-        struct BackOfficeUserAuth {
-            pub user_id: uuid::Uuid,
-            pub user_name: String,
-            pub role_id: uuid::Uuid,
-            pub role_name: String,
-            pub password_hash: String,
-        }
 
         let c: BackOfficeUserAuth = BackOfficeUserAuth {
             user_id: row.get("user_id"),
@@ -226,7 +323,7 @@ pub fn backoffice_authenticate(req: &mut Request) -> IronResult<Response> {
         let res = match bcrypt::verify(&authuser.password, &c.password_hash) {
             Ok(x) => x,
             Err(_) => {
-                return Ok(resp);
+                return result;
             }
         };
         //info!(logger, "res [{:?}]", res);
@@ -235,86 +332,21 @@ pub fn backoffice_authenticate(req: &mut Request) -> IronResult<Response> {
             break;
         }
 
-        let mut jwt_issuer = String::new();
-        {
-            use url;
-            let _url: url::Url = req.url.clone().into();
-            jwt_issuer += _url.scheme();
-
-            jwt_issuer += "://";
-            if let Some(x) = _url.host_str() {
-                //info!(logger, "url host_str [{}]", x);
-                jwt_issuer += x;
-            }
-        }
-
-        let current_time = Utc::now();
-        let jwt_issue_timestamp: i64 = current_time.timestamp();
-        let jwt_exp_timestamp = jwt_issue_timestamp + (3600 * 1);
-
-        /*
-        let jissuetime = Utc.timestamp(jwt_issue_timestamp, 0);
-        let jexptime = Utc.timestamp(jwt_exp_timestamp, 0);
-        info!(logger, "jwt_iss_time {},  jwet_exp_time {}", jissuetime, jexptime);
-        */
-
-        //let remote_addr = .clone();
-
-        let mut jwt_aud = Vec::new();
-        jwt_aud.push(c.user_id.simple().to_string());
-        jwt_aud.push(c.user_id.to_string());
-        jwt_aud.push(c.user_name.clone());
-        jwt_aud.push(req.remote_addr.to_string());
-        //info!(logger, "jwt_aud {:?}", jwt_aud);
-
-
-        let private_claims = PrivateClaims {
-            user_id: c.user_id,
-            user_name: c.user_name,
-            role_id: c.role_id,
-            role_name: c.role_name,
-        };
-
-        let my_claims = Claims {
-            sub: c.user_id.simple().to_string(), // populating uuid as simple format (hypen-less format) string
-            iss: jwt_issuer,
-            aud: jwt_aud,
-            iat: jwt_issue_timestamp,
-            exp: jwt_exp_timestamp,
-            jti: uuid::Uuid::new_v4().simple().to_string(),
-            nbf: jwt_issue_timestamp,
-            pvt: private_claims,
-        };
-
-        let jwt_token: String;
-
-        if let Ok(jtoken) = jsonwebtoken::encode(
-            &jsonwebtoken::Header::default(),
-            &my_claims,
-            &cfgmisc.jwt_secret.clone().into_bytes(),
-        )
-        {
-            jwt_token = jtoken;
-        } else {
-            return Ok(resp);
-        }
-
-        let resp_data: ResponseData<String> = ResponseData {
-            success: true,
-            data: jwt_token,
-            message: "".to_owned(),
-        };
-
-        if let Ok(respjson) = serde_json::to_string(&resp_data) {
-            resp = Response::with((status::Ok, respjson));
-        }
+        result = create_json_web_token(
+            req.url.clone().into(),
+            req.remote_addr.to_string(),
+            resp_headers,
+            cfgmisc,
+            c,
+        );
 
         break; // we only need first element
     }
 
-    resp.headers.set(resp_headers);
-    Ok(resp)
+    result
 }
+
+
 
 
 
@@ -354,7 +386,11 @@ pub fn backoffice_renew_token(req: &mut Request) -> IronResult<Response> {
     let mut validation: jsonwebtoken::Validation = jsonwebtoken::Validation::default();
     validation.leeway = cfgmisc.jwt_time_variation.clone();
 
-    let mut claims: Claims = match jsonwebtoken::decode::<Claims>(&authtoken.token, cfgmisc.jwt_secret.clone().as_bytes(), &validation) {
+    let mut claims: Claims = match jsonwebtoken::decode::<Claims>(
+        &authtoken.token,
+        cfgmisc.jwt_secret.clone().as_bytes(),
+        &validation,
+    ) {
         Ok(x) => x.claims,
         Err(_) => return Ok(resp),
     };
