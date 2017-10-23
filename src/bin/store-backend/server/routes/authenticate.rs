@@ -8,8 +8,6 @@ use dal;
 use iron::url;
 use std;
 use std::ops::Deref;
-//use r2d2_postgres;
-//use time::{Timespec, Tm, at_utc};
 use chrono::prelude::*;
 use serde_json;
 use std::str;
@@ -141,6 +139,21 @@ fn create_json_web_token(
     resp.headers.set(resp_headers);
 
     Ok(resp)
+}
+
+
+
+
+pub fn validate_auth_token(token: String, cfgmisc: configmisc::ConfigMisc) -> Option<PrivateClaims> {
+
+    let mut validation: jsonwebtoken::Validation = jsonwebtoken::Validation::default();
+    validation.leeway = cfgmisc.jwt_time_variation.clone();
+
+    match jsonwebtoken::decode::<Claims>(&token, cfgmisc.jwt_secret.clone().as_bytes(), &validation) {
+        Ok(x) => Some(x.claims.pvt),
+        Err(_) => None,
+    }
+
 }
 
 
@@ -435,17 +448,4 @@ pub fn backoffice_renew_token(req: &mut Request) -> IronResult<Response> {
     }
 
     Ok(resp)
-}
-
-
-pub fn validate_auth_token(token: String, cfgmisc: configmisc::ConfigMisc) -> Option<PrivateClaims> {
-
-    let mut validation: jsonwebtoken::Validation = jsonwebtoken::Validation::default();
-    validation.leeway = cfgmisc.jwt_time_variation.clone();
-
-    match jsonwebtoken::decode::<Claims>(&token, cfgmisc.jwt_secret.clone().as_bytes(), &validation) {
-        Ok(x) => Some(x.claims.pvt),
-        Err(_) => None,
-    }
-
 }
