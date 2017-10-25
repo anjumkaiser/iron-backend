@@ -21,13 +21,13 @@ fn configure_router() -> Router {
     router.post("/authenticate", routes::authenticate, "authenticate");
     router.post(
         "/backoffice/authenticate",
-        routes::authenticate::backoffice_authenticate,
+        routes::authenticate::local::backoffice_authenticate,
         "backoffice::authenticate",
     );
 
     router.post(
         "/backoffice/renew",
-        routes::authenticate::backoffice_renew_token,
+        routes::authenticate::renew_json_web_token,
         "backoffice::renew_token",
     );
 
