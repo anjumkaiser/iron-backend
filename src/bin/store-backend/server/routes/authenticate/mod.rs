@@ -19,8 +19,6 @@ use configmisc;
 
 pub mod local;
 
-pub use self::local::*;
-
 
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -54,13 +52,7 @@ struct BackOfficeUserAuth {
 }
 
 #[inline]
-fn create_json_web_token(
-    url: url::Url,
-    remote_addr: String,
-    resp_headers: hyper::header::ContentType,
-    cfgmisc: std::sync::Arc<configmisc::ConfigMisc>,
-    c: BackOfficeUserAuth,
-) -> IronResult<Response> {
+fn create_json_web_token(url: url::Url, remote_addr: String, resp_headers: hyper::header::ContentType, cfgmisc: std::sync::Arc<configmisc::ConfigMisc>, c: BackOfficeUserAuth) -> IronResult<Response> {
 
     let mut resp = Response::with(status::InternalServerError);
 
@@ -148,7 +140,7 @@ pub fn renew_json_web_token(req: &mut Request) -> IronResult<Response> {
 
     let logger: slog::Logger = get_logger!(req);
 
-    info!(logger, "in backoffice_renew_token");
+    info!(logger, "in renew_json_web_token");
 
     let mut resp = Response::with((status::InternalServerError));
 

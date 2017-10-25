@@ -13,6 +13,10 @@ use std::str;
 use uuid;
 use bcrypt;
 use slog;
+use std;
+use multipart::server::Multipart;
+use multipart::server::MultipartData;
+//use multipart::server::{Multipart, Entries, SaveResult, SavedFile};
 
 use server::loggerenclave::LoggerEnclave;
 
@@ -356,8 +360,7 @@ pub fn authenticate(req: &mut Request) -> IronResult<Response> {
 }
 
 
-use std;
-use multipart::server::{Multipart, Entries, SaveResult, SavedFile};
+
 
 
 pub fn upload_file(req: &mut Request) -> IronResult<Response> {
@@ -493,7 +496,7 @@ pub fn upload_file(req: &mut Request) -> IronResult<Response> {
         }
     };
 
-    use multipart::server::MultipartData;
+
     let fname = multipart_field.name;
     if let MultipartData::File(mut mfile) = multipart_field.data {
 
