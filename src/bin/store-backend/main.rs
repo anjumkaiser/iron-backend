@@ -40,6 +40,9 @@ extern crate slog;
 extern crate slog_json;
 extern crate iron_slog;
 
+
+extern crate oauth2;
+
 extern crate common;
 
 use common::{config, configmisc};

@@ -35,6 +35,7 @@ lettre = "0.6.2"
 mime = "0.3.3"
 mongodb = "0.3.3"
 mqtt = "0.1.3"
+oauth2 = "1.1.2"
 params = "0.6.0"
 persistent = "0.3.0"
 protobuf = "1.4.1"
@@ -78,6 +79,10 @@ version = "0.16.0"
 features = ["postgres"]
 version = "0.16.0"
 
+[dependencies.multipart]
+features = ["iron"]
+version = "0.13.3"
+
 [dependencies.postgres]
 features = [
     "with-uuid",
@@ -92,11 +97,6 @@ features = [
     "v5",
 ]
 version = "0.5.1"
-
-
-[dependencies.multipart]
-features = ["iron"]
-version = "0.13.3"
 
 [lib]
 name = "common"

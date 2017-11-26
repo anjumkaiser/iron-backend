@@ -31,6 +31,8 @@ fn configure_router() -> Router {
         "backoffice::renew_token",
     );
 
+    router.get("/auth/google", routes::authenticate::google::google_authenticate, "google_authentication");
+
     router.post("/fileupload", routes::upload_file, "file-uploads");
 
     router
