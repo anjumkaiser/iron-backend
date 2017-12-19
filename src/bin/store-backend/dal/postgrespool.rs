@@ -18,8 +18,6 @@ impl DalPostgresPool {
 
         info!(logger, "Creating Postgres connection pool");
 
-        let config = r2d2::Config::default();
-
         let mut url = "postgres://".to_string();
         if "" != dbcfg.database.user {
             url += &dbcfg.database.user;
@@ -43,7 +41,7 @@ impl DalPostgresPool {
             }
         };
 
-        match r2d2::Pool::new(config, manager) {
+        match r2d2::Pool::builder().build(manager) {
             Err(e) => {
                 error!(
                     logger,
