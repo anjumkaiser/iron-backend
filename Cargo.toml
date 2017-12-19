@@ -40,7 +40,7 @@ params = "0.6.0"
 persistent = "0.3.0"
 protobuf = "1.4.1"
 r2d2 = "0.7.3"
-r2d2-diesel = "0.16.0"
+r2d2-diesel = "0.99.0"
 r2d2_postgres = "0.13.0"
 r2d2_redis = "0.6.0"
 redis = "0.8.0"
@@ -73,11 +73,8 @@ features = [
     "uuid",
     "serde_json",
 ]
-version = "0.16.0"
+version = "0.99.0"
 
-[dependencies.diesel_codegen]
-features = ["postgres"]
-version = "0.16.0"
 
 [dependencies.multipart]
 features = ["iron"]
