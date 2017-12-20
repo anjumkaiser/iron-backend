@@ -4,7 +4,9 @@ extern crate slog_json;
 
 extern crate uuid;
 extern crate postgres;
+extern crate native_tls;
 extern crate lettre;
+extern crate lettre_email;
 extern crate mime;
 extern crate hostname;
 extern crate common;
@@ -12,11 +14,14 @@ extern crate common;
 use uuid::Uuid;
 use postgres::{Connection, TlsMode};
 
-use lettre::transport::EmailTransport;
-use lettre::transport::smtp::{SmtpTransportBuilder, SmtpTransport, SecurityLevel};
-use lettre::transport::smtp::authentication::Mechanism;
-use lettre::transport::smtp::SUBMISSION_PORT;
-use lettre::email::{EmailBuilder, Email};
+use lettre::EmailTransport;
+use lettre::smtp::{SmtpTransportBuilder, SmtpTransport};
+use lettre::smtp::authentication::Credentials;
+use lettre::smtp::authentication::Mechanism;
+use lettre::smtp::ConnectionReuseParameters;
+use lettre::smtp::SUBMISSION_PORT;
+use lettre_email::{EmailBuilder, Email};
+use lettre::smtp::extension::ClientId;
 
 use slog::Drain;
 
@@ -66,10 +71,26 @@ fn main() {
         std::process::exit(-1);
     }
 
-
+    let domain: String = "".to_string();
+    let native_tls_builder = match native_tls::TlsConnector::builder() {
+        Ok(x) => x,
+        Err(_) => {
+            error!(logger, "Unable to get TLS builder, quitting");
+            std::process::exit(-1);
+        }
+    };
+    let native_tls = match native_tls_builder.build() {
+        Ok(x) => x,
+        Err(_) => {
+            error!(logger, "Unable to build TLS connection, quitting");
+            std::process::exit(-1);
+        }
+    };
+    let client_tls_params = lettre::smtp::client::net::ClientTlsParameters::new(domain, native_tls);
+    let client_security = lettre::smtp::ClientSecurity::Required(client_tls_params);
 
     let mut mailer_builder;
-    if let Ok(x) = SmtpTransportBuilder::new((&c.email_notifier.mailer as &str, SUBMISSION_PORT)) {
+    if let Ok(x) = SmtpTransportBuilder::new((&c.email_notifier.mailer as &str, SUBMISSION_PORT), client_security) {
         mailer_builder = x;
     } else {
         error!(logger, "Unable to resolv SMTP transport, quitting");
@@ -77,16 +98,14 @@ fn main() {
     }
 
     mailer_builder = mailer_builder
-        .hello_name(&my_host_name)
-        .credentials(&c.email_notifier.username, &c.email_notifier.password)
-        .security_level(SecurityLevel::AlwaysEncrypt)
+        .hello_name(ClientId::Domain(my_host_name))
+        .credentials(Credentials::new(c.email_notifier.username, c.email_notifier.password))
         .smtp_utf8(true)
         .authentication_mechanism(Mechanism::CramMd5)
-        .connection_reuse(true);
+        .connection_reuse(ConnectionReuseParameters::ReuseUnlimited);
 
     let mut mailer: SmtpTransport = mailer_builder.build();
-
-
+    
     let mut connstr = "postgres://".to_string();
     if "" != c.database.user {
         connstr += &c.database.user;
@@ -143,9 +162,9 @@ fn main() {
                 &mail_data.from_address as &str,
                 &mail_data.from_address_name as &str,
             ))
-            .subject(&mail_data.subject)
-            .text(&mail_data.mail_body_text)
-            .html(&mail_data.mail_body_html)
+            .subject(mail_data.subject)
+            .text(mail_data.mail_body_text)
+            .html(mail_data.mail_body_html)
             .build()
         {
             email = x;
@@ -153,9 +172,7 @@ fn main() {
             continue;
         }
 
-        //
-
-        let send_result = mailer.send(email.clone());
+        let send_result = mailer.send(&email);
         if send_result.is_err() {
 
             error!(logger, "errror sending mail to {}", mail_data.mail_id);
