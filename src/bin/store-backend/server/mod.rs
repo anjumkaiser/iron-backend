@@ -31,7 +31,11 @@ fn configure_router() -> Router {
         "backoffice::renew_token",
     );
 
-    router.get("/auth/google", routes::authenticate::google::google_authenticate, "google_authentication");
+    router.get(
+        "/auth/google",
+        routes::authenticate::google::google_authenticate,
+        "google_authentication",
+    );
 
     router.post("/fileupload", routes::upload_file, "file-uploads");
 
@@ -45,15 +49,18 @@ pub fn serve(logger: slog::Logger, c: config::Config, pg_dal: dal::DalPostgresPo
     let router = configure_router();
 
     let logger_formatter = DefaultLogFormatter;
+    /* // TODO: temporarily disabling iron-slog logging
     let logger_middleware = LoggerMiddleware::new(
         router,
         logger.new(o!("child" => "routes")),
         logger_formatter,
     );
+    */
 
-    let logger_enclave: loggerenclave::LoggerEnclave = loggerenclave::LoggerEnclave { logger: logger.new(o!("child" => "rotues")) };
+    let logger_enclave: loggerenclave::LoggerEnclave = loggerenclave::LoggerEnclave { logger: logger.new(o!("child" => "routes")) };
 
-    let mut middleware = Chain::new(logger_middleware);
+    //let mut middleware = Chain::new(logger_middleware); // TODO: temporarily disabling iron-slog logging
+    let mut middleware = Chain::new(router);
     middleware.link_before(Read::<loggerenclave::LoggerEnclave>::one(logger_enclave));
     middleware.link_before(Read::<configmisc::ConfigMisc>::one(config_misc));
     middleware.link_before(Write::<dal::DalPostgresPool>::one(pg_dal));
