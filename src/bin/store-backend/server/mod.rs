@@ -39,6 +39,8 @@ fn configure_router() -> Router {
 
     router.post("/fileupload", routes::upload_file, "file-uploads");
 
+    router.get("/product", routes::products::get_products, "get_products");
+
     router
 }
 

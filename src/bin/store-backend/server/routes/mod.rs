@@ -21,6 +21,8 @@ use multipart::server::MultipartData;
 use server::loggerenclave::LoggerEnclave;
 
 pub mod authenticate;
+pub mod products;
+
 
 
 #[derive(Serialize, Deserialize, Debug)]
