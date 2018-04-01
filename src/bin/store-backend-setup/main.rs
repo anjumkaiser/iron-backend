@@ -172,6 +172,59 @@ fn main() {
                 }
             }
 
+            res = txn.execute("INSERT INTO country (code, name) VALUES ('000', 'Unknown')", &[]);
+
+            match res {
+                Ok(_) => {
+                    info!(logger, "Successfully added unknown country");
+                }
+                Err(e) => {
+                    error!(logger, "Unable to add unknown country, {}", e);
+                    should_commit = false;
+                }
+            }
+
+
+            let city_id = Uuid::new_v4();
+            info!(logger, "city id is: {}", city_id);
+
+            res = txn.execute("INSERT INTO city (id, name, country_code) VALUES ($1, 'Unknown', '000')", &[&city_id]);
+
+            match res {
+                Ok(_) => {
+                    info!(logger, "Successfully added unknown city");
+                }
+                Err(e) => {
+                    error!(logger, "Unable to add unknown city, {}", e);
+                    should_commit = false;
+                }
+            }
+
+
+            res = txn.execute("INSERT INTO manufacturer (id, name, address, principal_contact) VALUES ($1, 'Unknown', 'Unknown', 'Unknown')", &[&Uuid::new_v4()]);
+
+            match res {
+                Ok(_) => {
+                    info!(logger, "Successfully added unknown manufacturer");
+                }
+                Err(e) => {
+                    error!(logger, "Unable to add unknown manufacturer, {}", e);
+                    should_commit = false;
+                }
+            }
+
+
+            res = txn.execute("INSERT INTO supplier (id, name, address, city, principal_contact) VALUES ($1, 'Unknown', 'Unknown', $2, 'Unknown')", &[&Uuid::new_v4(), &city_id]);
+
+            match res {
+                Ok(_) => {
+                    info!(logger, "Successfully added unknown supplier");
+                }
+                Err(e) => {
+                    error!(logger, "Unable to add unknown supplier, {}", e);
+                    should_commit = false;
+                }
+            }
 
             if should_commit {
                 txn.set_commit();
