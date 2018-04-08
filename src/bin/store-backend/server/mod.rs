@@ -41,6 +41,7 @@ fn configure_router() -> Router {
 
     router.get("/product", routes::products::get_products, "get_products");
     router.post("/product/add", routes::products::add_product, "add_product");
+    router.post("/product/edit/:id", routes::products::edit_product, "edit_product");
 
     router
 }

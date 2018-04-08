@@ -248,3 +248,100 @@ pub fn add_product(req: &mut Request) -> IronResult<Response> {
 
     Ok(resp)
 }
+
+
+
+pub fn edit_product(req: &mut Request) -> IronResult<Response> {
+    let mut resp = Response::with((status::NotFound));
+    let logger: slog::Logger = get_logger!(req);
+
+    //{}
+
+    let rbody = req.get::<bodyparser::Json>();
+    info!(logger, "rbody {:?}", rbody);
+
+    let product = match req.get::<bodyparser::Struct<Product>>() {
+        Ok(Some(x)) => x,
+        _ => {
+            info!(logger, "Unable to get Product data from request");
+            return Ok(resp);
+        }
+    };
+    
+    info!(logger, "product = {:?}", product);
+
+    let arcpool = match req.get::<Write<dal::DalPostgresPool>>() {
+        Ok(x) => x,
+        Err(e) => {
+            error!(
+                logger,
+                "Unable to get connection pool, error message [{}]",
+                e
+            );
+            return Ok(resp);
+        }
+    };
+
+    let lockedpool = match arcpool.lock() {
+        Ok(x) => x,
+        Err(e) => {
+            error!(
+                logger,
+                "Unable to get lock on connection pool, error message [{}]",
+                e
+            );
+            return Ok(resp);
+        }
+    };
+
+
+    let pool = lockedpool.deref();
+    let conn = match pool.rw_pool.get() {
+        Ok(x) => x,
+        Err(e) => {
+            error!(
+                logger,
+                "Unable to get connection from pool, erro message [{}]",
+                e
+            );
+            return Ok(resp);
+        }
+    };
+
+
+    let mut str_stmt: String = "UPDATE PRODUCT SET name=$2, description=$3, manufacturer_id=$4, supplier_id=$5, gtin12=$6, gtin13=$7)".to_string();
+    str_stmt += " WHERE id=$1;";
+
+
+    let stmt = match conn.prepare(&str_stmt) {
+        Ok(x) => x,
+        Err(e) => {
+            error!(logger, "Unable to prepare statement, error message [{}]", e);
+            return Ok(resp);
+        }
+    };
+
+
+
+    let res = match stmt.execute(&[
+            &product.id,
+            &product.name,
+            &product.description,
+            &product.manufacturer_id,
+            &product.supplier_id,
+            &product.gtin12,
+            &product.gtin13
+        ]) {
+        Ok(x) => x,
+        Err(e) => {
+            error!(logger, "Unable to edit product in database, error message [{}]", e);
+            return Ok(resp);
+        }
+    };
+
+    info!(logger, "Successfully edited product in database {}", product.id);
+
+    resp=Response::with((status::Ok));
+
+    Ok(resp)
+}
