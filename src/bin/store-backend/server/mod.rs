@@ -5,7 +5,7 @@ use persistent::{Read, Write};
 use config;
 use configmisc;
 use dal;
-use iron_slog::{LoggerMiddleware, DefaultLogFormatter};
+//use iron_slog::{LoggerMiddleware, DefaultLogFormatter};
 
 #[macro_use]
 mod loggerenclave;
@@ -52,8 +52,8 @@ pub fn serve(logger: slog::Logger, c: config::Config, pg_dal: dal::DalPostgresPo
 
     let router = configure_router();
 
-    let logger_formatter = DefaultLogFormatter;
     /* // TODO: temporarily disabling iron-slog logging
+    let logger_formatter = DefaultLogFormatter;
     let logger_middleware = LoggerMiddleware::new(
         router,
         logger.new(o!("child" => "routes")),

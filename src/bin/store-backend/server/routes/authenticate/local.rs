@@ -22,7 +22,7 @@ pub fn backoffice_authenticate(req: &mut Request) -> IronResult<Response> {
 
     info!(logger, "in backoffice_authenticate");
 
-    let mut resp = Response::with((status::NotFound));
+    let mut resp = Response::with(status::NotFound);
 
     //let ref rhead = req.headers;
     //info!(logger, "rhead {}", rhead);

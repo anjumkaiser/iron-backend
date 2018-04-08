@@ -58,7 +58,7 @@ pub fn index_handler2(_: &mut Request) -> IronResult<Response> {
 
 pub fn index_handler3(req: &mut Request) -> IronResult<Response> {
 
-    let mut resp = Response::with((status::NotFound));
+    let mut resp = Response::with(status::NotFound);
 
     let logger: slog::Logger = get_logger!(req);
 
@@ -93,7 +93,7 @@ pub fn get_db_time(req: &mut Request) -> IronResult<Response> {
     let logger: slog::Logger = get_logger!(req);
 
     info!(logger, "in get_db_time");
-    let mut resp = Response::with((status::NotFound));
+    let mut resp = Response::with(status::NotFound);
 
     let arcpool = match req.get::<Write<dal::DalPostgresPool>>() {
         Ok(x) => x,
@@ -206,7 +206,7 @@ pub fn authenticate(req: &mut Request) -> IronResult<Response> {
     info!(logger, "in authenticate");
 
 
-    let mut resp = Response::with((status::NotFound));
+    let mut resp = Response::with(status::NotFound);
 
     //let ref rhead = req.headers;
     //info!(logger, "rhead {}", rhead);
@@ -345,7 +345,7 @@ pub fn authenticate(req: &mut Request) -> IronResult<Response> {
             if let Ok(res) = bcrypt::verify(&authuser.password, &c.password_hash) {
                 info!(logger, "res [{:?}]", res);
                 if res == true {
-                    resp = Response::with((status::Ok));
+                    resp = Response::with(status::Ok);
                 }
             }
 
@@ -366,7 +366,7 @@ pub fn authenticate(req: &mut Request) -> IronResult<Response> {
 
 
 pub fn upload_file(req: &mut Request) -> IronResult<Response> {
-    let mut resp = Response::with((status::BadRequest));
+    let mut resp = Response::with(status::BadRequest);
 
     let logger: slog::Logger = get_logger!(req);
 

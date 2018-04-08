@@ -70,7 +70,7 @@ pub fn google_authenticate(_: &mut Request) -> IronResult<Response> {
         "Open this URL in your browser:\n{}\n",
         authorize_url.to_string()
     );
-    resp = Response::with((status::TemporaryRedirect));
+    resp = Response::with(status::TemporaryRedirect);
     resp.headers.set(hyper::header::Location(
         authorize_url.to_string(),
     ));

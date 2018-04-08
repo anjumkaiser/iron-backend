@@ -45,7 +45,7 @@ pub fn get_products(req: &mut Request) -> IronResult<Response> {
     let logger: slog::Logger = get_logger!(req);
 
     info!(logger, "in get_products");
-    let mut resp = Response::with((status::NotFound));
+    let mut resp = Response::with(status::NotFound);
 
     let arcpool = match req.get::<Write<dal::DalPostgresPool>>() {
         Ok(x) => x,
@@ -155,7 +155,7 @@ pub fn get_products(req: &mut Request) -> IronResult<Response> {
 }
 
 pub fn add_product(req: &mut Request) -> IronResult<Response> {
-    let mut resp = Response::with((status::NotFound));
+    let mut resp = Response::with(status::NotFound);
     let logger: slog::Logger = get_logger!(req);
 
     //{}
@@ -226,7 +226,7 @@ pub fn add_product(req: &mut Request) -> IronResult<Response> {
 
 
 
-    let res = match stmt.execute(&[
+    let _res = match stmt.execute(&[
             &product.id,
             &product.name,
             &product.description,
@@ -244,7 +244,7 @@ pub fn add_product(req: &mut Request) -> IronResult<Response> {
 
     info!(logger, "Successfully added product to database {}", product.id);
 
-    resp=Response::with((status::Ok));
+    resp=Response::with(status::Ok);
 
     Ok(resp)
 }
@@ -252,7 +252,7 @@ pub fn add_product(req: &mut Request) -> IronResult<Response> {
 
 
 pub fn edit_product(req: &mut Request) -> IronResult<Response> {
-    let mut resp = Response::with((status::NotFound));
+    let mut resp = Response::with(status::NotFound);
     let logger: slog::Logger = get_logger!(req);
 
     //{}
@@ -323,7 +323,7 @@ pub fn edit_product(req: &mut Request) -> IronResult<Response> {
 
 
 
-    let res = match stmt.execute(&[
+    let _res = match stmt.execute(&[
             &product.id,
             &product.name,
             &product.description,
@@ -341,7 +341,7 @@ pub fn edit_product(req: &mut Request) -> IronResult<Response> {
 
     info!(logger, "Successfully edited product in database {}", product.id);
 
-    resp=Response::with((status::Ok));
+    resp=Response::with(status::Ok);
 
     Ok(resp)
 }

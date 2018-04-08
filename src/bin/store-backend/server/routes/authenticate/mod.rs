@@ -143,7 +143,7 @@ pub fn renew_json_web_token(req: &mut Request) -> IronResult<Response> {
 
     info!(logger, "in renew_json_web_token");
 
-    let mut resp = Response::with((status::InternalServerError));
+    let mut resp = Response::with(status::InternalServerError);
 
     let rbody = req.get::<bodyparser::Json>();
     info!(logger, "rbody {:?}", rbody);
@@ -185,7 +185,7 @@ pub fn renew_json_web_token(req: &mut Request) -> IronResult<Response> {
 
     if authtoken.user_id != claims.sub {
         info!(logger, "unmatched user id from token");
-        resp = Response::with((status::Unauthorized));
+        resp = Response::with(status::Unauthorized);
         return Ok(resp);
     }
 
