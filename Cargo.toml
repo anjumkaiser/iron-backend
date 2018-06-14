@@ -31,7 +31,7 @@ native-tls = "0.1.5"
 iron = "0.6.0"
 iron-csrf = "0.3.1"
 iron-sessionstorage = "0.6.6"
-iron-slog = "0.0.1"
+iron-slog = "0.0.2"
 jsonwebtoken = "4.0.1"
 lettre = "0.8.2"
 lettre_email = "0.8.2"
@@ -55,10 +55,10 @@ serde = "1.0.66"
 serde-protobuf = "0.7.0"
 serde_cbor = "0.8.2"
 serde_derive = "1.0.66"
-serde_json = "1.0.19"
+serde_json = "1.0.20"
 serde_urlencoded = "0.5.2"
 serde_xml = "0.9.1"
-serde_yaml = "0.7.4"
+serde_yaml = "0.7.5"
 set = "0.1.1"
 slog = "2.2.3"
 slog-json = "2.2.0"
@@ -68,7 +68,7 @@ url = "1.7.0"
 
 [dependencies.chrono]
 features = ["serde"]
-version = "0.4.2"
+version = "0.4.3"
 
 [dependencies.diesel]
 features = [
@@ -76,7 +76,7 @@ features = [
     "uuid",
     "serde_json",
 ]
-version = "1.3.0"
+version = "1.3.2"
 
 
 [dependencies.multipart]
