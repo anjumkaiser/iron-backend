@@ -4,6 +4,7 @@ name = "store-backend"
 version = "0.1.0"
 publish = false
 
+
 [[bin]]
 name = "store-backend"
 path = "src/bin/store-backend/main.rs"
