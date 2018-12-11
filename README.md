@@ -36,7 +36,14 @@ Create Database
 postgresql=# create database store owner store tablespace store;
 
 
+Login on PostgreSQL as superuser account and Create uuid extention
+$ psql -U postgres store -W
+postgresql=# create extension if not exists "uuid-ossp";
 
+
+Validate if extension is created
+postgresql=# SELECT uuid_generate_v1();
+postgresql=# SELECT uuid_generate_v4();
 
 Building on Windows
 
